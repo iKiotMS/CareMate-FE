@@ -1,104 +1,61 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useAuthStore } from "@/hooks/useAuth";
-import { useAuth } from "@/hooks/useApi";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Input, Label, FormField } from "@/components/ui/Input";
+import { t } from "@/lib/i18n";
+
+const DEMO_ROLES = [
+  { role: "customer", href: "/customer/dashboard", label: t("auth.roleCustomer") },
+  { role: "cleaner", href: "/cleaner/dashboard", label: t("auth.roleCleaner") },
+  { role: "admin", href: "/admin/dashboard", label: t("auth.roleAdmin") },
+];
 
 export default function LoginPage() {
   const router = useRouter();
-  const [formData, setFormData] = useState({ email: "", password: "" });
-  const [error, setError] = useState("");
-  const { login, isLoading } = useAuth();
-  const { login: setAuthStore } = useAuthStore();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-
-    try {
-      const response = await login(formData);
-      const { accessToken, refreshToken, user } = response.data;
-      setAuthStore(user, accessToken, refreshToken);
-      router.push(`/${user.role}/dashboard`);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Login failed");
-    }
+    router.push("/customer/dashboard");
   };
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold mb-6 text-center">Login</h1>
+    <Card padding="lg" className="shadow-[var(--shadow-lg)]">
+      <h1 className="text-2xl font-bold text-[var(--color-text)] mb-1">{t("auth.loginTitle")}</h1>
+      <p className="text-sm text-[var(--color-text-muted)] mb-6">{t("auth.demoHint")}</p>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit}>
-        <div className="mb-4">
-          <label className="block text-gray-700 font-semibold mb-2">
-            Email
-          </label>
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="your@email.com"
-          />
-        </div>
-
-        <div className="mb-6">
-          <label className="block text-gray-700 font-semibold mb-2">
-            Password
-          </label>
-          <input
-            type="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="••••••••"
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50"
-        >
-          {isLoading ? "Logging in..." : "Login"}
-        </button>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <FormField label={t("auth.email")}>
+          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@caremate.vn" />
+        </FormField>
+        <FormField label={t("auth.password")}>
+          <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
+        </FormField>
+        <Button type="submit" className="w-full">{t("common.login")}</Button>
       </form>
 
-      <p className="text-center text-gray-600 mt-4">
-        Don't have an account?{" "}
-        <Link
-          href="/register"
-          className="text-blue-600 hover:underline font-semibold"
-        >
-          Register here
-        </Link>
-      </p>
+      <div className="mt-6 pt-6 border-t border-[var(--color-border)]">
+        <p className="text-xs text-[var(--color-text-muted)] mb-3">Vào nhanh theo vai trò:</p>
+        <div className="flex flex-wrap gap-2">
+          {DEMO_ROLES.map((r) => (
+            <Link key={r.role} href={r.href}>
+              <Button variant="outline" size="sm">{r.label}</Button>
+            </Link>
+          ))}
+        </div>
+      </div>
 
-      <p className="text-center text-gray-600 mt-2">
-        <Link
-          href="/forgot-password"
-          className="text-blue-600 hover:underline text-sm"
-        >
-          Forgot password?
+      <p className="text-center text-sm text-[var(--color-text-secondary)] mt-6">
+        {t("auth.noAccount")}{" "}
+        <Link href="/register" className="text-[var(--color-primary)] font-medium hover:underline">
+          {t("common.register")}
         </Link>
       </p>
-    </div>
+    </Card>
   );
 }

@@ -1,45 +1,59 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { StatCard } from "@/components/shared/StatCard";
+import { OrderStatusBadge } from "@/components/shared/OrderStatusBadge";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { t } from "@/lib/i18n";
+import { getCustomerOrders, formatDate } from "@/data/mock";
+import { ClipboardList, CheckCircle, Star, Calendar, Sparkles } from "lucide-react";
 
-export default function CustomerDashboard() {
-  const router = useRouter();
+export default function CustomerDashboardPage() {
+  const orders = getCustomerOrders();
+  const active = orders.filter((o) => !["COMPLETED", "CANCELLED"].includes(o.status)).length;
+  const completed = orders.filter((o) => o.status === "COMPLETED").length;
+  const pendingReviews = orders.filter((o) => o.status === "REVIEW_PENDING").length;
+  const upcoming = orders.filter((o) => ["PENDING", "ASSIGNED", "ACCEPTED"].includes(o.status)).slice(0, 3);
+
   return (
     <div>
-      <button
-        onClick={() => router.back()}
-        className="text-blue-600 hover:underline mb-4 inline-block"
-      >
-        ← Back
-      </button>
-      <h2 className="text-3xl font-bold mb-8">Welcome to Your Dashboard</h2>
+      <PageHeader
+        title={t("customer.dashboard.title")}
+        subtitle={t("customer.dashboard.subtitle")}
+        action={
+          <Link href="/customer/book">
+            <Button className="gap-2"><Sparkles className="w-4 h-4" />{t("customer.dashboard.quickBook")}</Button>
+          </Link>
+        }
+      />
 
-      <div className="grid md:grid-cols-3 gap-6">
-        <Link
-          href="/customer/orders"
-          className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition"
-        >
-          <h3 className="text-xl font-bold mb-2">📋 My Orders</h3>
-          <p className="text-gray-600">View and manage your cleaning orders</p>
-        </Link>
-
-        <Link
-          href="/customer/orders/new"
-          className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition"
-        >
-          <h3 className="text-xl font-bold mb-2">➕ Create Order</h3>
-          <p className="text-gray-600">Book a new cleaning service</p>
-        </Link>
-
-        <Link
-          href="/customer/profile"
-          className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition"
-        >
-          <h3 className="text-xl font-bold mb-2">👤 My Profile</h3>
-          <p className="text-gray-600">Update your profile information</p>
-        </Link>
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <StatCard title={t("customer.dashboard.activeOrders")} value={active} icon={ClipboardList} accent="primary" />
+        <StatCard title={t("customer.dashboard.completedOrders")} value={completed} icon={CheckCircle} accent="success" />
+        <StatCard title={t("customer.dashboard.pendingReviews")} value={pendingReviews} icon={Star} accent="warning" />
+        <StatCard title={t("customer.dashboard.upcomingSchedule")} value={upcoming.length} icon={Calendar} accent="info" />
       </div>
+
+      <Card>
+        <h2 className="font-semibold text-[var(--color-text)] mb-4">{t("customer.dashboard.upcomingSchedule")}</h2>
+        {upcoming.length === 0 ? (
+          <p className="text-sm text-[var(--color-text-muted)]">{t("common.noData")}</p>
+        ) : (
+          <div className="space-y-3">
+            {upcoming.map((o) => (
+              <Link key={o._id} href={`/customer/orders/${o._id}`} className="flex items-center justify-between p-3 rounded-[var(--radius-md)] hover:bg-[var(--color-surface-hover)] transition-colors">
+                <div>
+                  <p className="font-medium text-[var(--color-text)]">{o.address}</p>
+                  <p className="text-sm text-[var(--color-text-muted)]">{formatDate(o.scheduledDate)} · {o.scheduledTime}</p>
+                </div>
+                <OrderStatusBadge status={o.status} />
+              </Link>
+            ))}
+          </div>
+        )}
+      </Card>
     </div>
   );
 }

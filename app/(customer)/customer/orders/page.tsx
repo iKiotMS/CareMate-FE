@@ -2,127 +2,49 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useCustomerOrders } from "@/hooks/useApi";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { FilterTabs } from "@/components/shared/EmptyState";
+import { OrderStatusBadge } from "@/components/shared/OrderStatusBadge";
+import { DataTable, TableRow, TableCell } from "@/components/ui/DataTable";
+import { Button } from "@/components/ui/Button";
+import { t } from "@/lib/i18n";
+import { getCustomerOrders, formatDate } from "@/data/mock";
+import type { OrderStatus } from "@/types";
+
+const FILTERS = [
+  { id: "ALL", label: t("common.all") },
+  { id: "PENDING", label: t("status.pending") },
+  { id: "ASSIGNED", label: t("status.assigned") },
+  { id: "ACCEPTED", label: t("status.accepted") },
+  { id: "IN_PROGRESS", label: t("status.inProgress") },
+  { id: "COMPLETED", label: t("status.completed") },
+  { id: "CANCELLED", label: t("status.cancelled") },
+];
 
 export default function CustomerOrdersPage() {
-  const router = useRouter();
-  const [status, setStatus] = useState<string>();
-  const { data: orders, isLoading, error } = useCustomerOrders(status);
-
-  const statusOptions = [
-    "PENDING",
-    "ASSIGNED",
-    "ACCEPTED",
-    "IN_PROGRESS",
-    "COMPLETED",
-    "CANCELLED",
-  ];
-  const statusColors: any = {
-    PENDING: "bg-gray-100 text-gray-800",
-    ASSIGNED: "bg-blue-100 text-blue-800",
-    ACCEPTED: "bg-indigo-100 text-indigo-800",
-    IN_PROGRESS: "bg-yellow-100 text-yellow-800",
-    COMPLETED: "bg-green-100 text-green-800",
-    CANCELLED: "bg-red-100 text-red-800",
-  };
+  const [filter, setFilter] = useState("ALL");
+  const orders = getCustomerOrders().filter((o) => filter === "ALL" || o.status === filter);
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <button
-        onClick={() => router.back()}
-        className="text-blue-600 hover:underline mb-4 inline-block"
-      >
-        ← Back
-      </button>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">My Orders</h1>
-        <Link
-          href="/customer/orders/new"
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-        >
-          Create New Order
-        </Link>
-      </div>
+    <div>
+      <PageHeader title={t("customer.orders.title")} />
+      <FilterTabs tabs={FILTERS} active={filter} onChange={setFilter} className="mb-6" />
 
-      <div className="mb-6 flex gap-2 flex-wrap">
-        <button
-          onClick={() => setStatus(undefined)}
-          className={`px-4 py-2 rounded-lg transition ${
-            !status
-              ? "bg-gray-800 text-white"
-              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-          }`}
-        >
-          All
-        </button>
-        {statusOptions.map((s) => (
-          <button
-            key={s}
-            onClick={() => setStatus(s)}
-            className={`px-4 py-2 rounded-lg transition ${
-              status === s
-                ? "bg-gray-800 text-white"
-                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-            }`}
-          >
-            {s}
-          </button>
+      <DataTable headers={[t("customer.orders.orderId"), t("customer.orders.date"), t("customer.orders.status"), t("customer.orders.cleaner"), t("common.action")]}>
+        {orders.map((o) => (
+          <TableRow key={o._id}>
+            <TableCell><span className="font-mono text-xs">#{o._id.slice(-6)}</span></TableCell>
+            <TableCell>{formatDate(o.scheduledDate)}<br /><span className="text-xs text-[var(--color-text-muted)]">{o.scheduledTime}</span></TableCell>
+            <TableCell><OrderStatusBadge status={o.status as OrderStatus} /></TableCell>
+            <TableCell>{o.cleanerName ?? t("customer.orders.notAssigned")}</TableCell>
+            <TableCell>
+              <Link href={`/customer/orders/${o._id}`}>
+                <Button variant="ghost" size="sm">{t("common.view")}</Button>
+              </Link>
+            </TableCell>
+          </TableRow>
         ))}
-      </div>
-
-      {isLoading && (
-        <div className="text-center py-8 text-gray-600">Loading orders...</div>
-      )}
-
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-          Failed to load orders
-        </div>
-      )}
-
-      {orders && orders.length === 0 && (
-        <div className="text-center py-8 text-gray-600">
-          No orders found.{" "}
-          <Link
-            href="/customer/orders/new"
-            className="text-blue-600 hover:underline"
-          >
-            Create one now
-          </Link>
-        </div>
-      )}
-
-      {orders && orders.length > 0 && (
-        <div className="grid gap-4">
-          {orders.map((order: any) => (
-            <Link
-              key={order._id}
-              href={`/customer/orders/${order._id}`}
-              className="border border-gray-300 rounded-lg p-4 hover:shadow-lg transition"
-            >
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <h3 className="font-semibold text-lg">{order.address}</h3>
-                  <p className="text-sm text-gray-600">
-                    {new Date(order.scheduledDate).toLocaleDateString()} at{" "}
-                    {order.scheduledTime}
-                  </p>
-                </div>
-                <span
-                  className={`px-3 py-1 rounded-full text-sm font-semibold ${statusColors[order.status]}`}
-                >
-                  {order.status}
-                </span>
-              </div>
-              <p className="text-sm text-gray-600">
-                {order.tasks?.length || 0} tasks • Created{" "}
-                {new Date(order.createdAt).toLocaleDateString()}
-              </p>
-            </Link>
-          ))}
-        </div>
-      )}
+      </DataTable>
     </div>
   );
 }
