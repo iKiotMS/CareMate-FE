@@ -5,23 +5,41 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Input, Label, FormField } from "@/components/ui/Input";
+import { Input, FormField } from "@/components/ui/Input";
+import { useAuth as useAuthApi } from "@/hooks/useApi";
+import { useAuthStore } from "@/hooks/useAuth";
 import { t } from "@/lib/i18n";
-
-const DEMO_ROLES = [
-  { role: "customer", href: "/customer/dashboard", label: t("auth.roleCustomer") },
-  { role: "cleaner", href: "/cleaner/dashboard", label: t("auth.roleCleaner") },
-  { role: "admin", href: "/admin/dashboard", label: t("auth.roleAdmin") },
-];
+import { getDefaultRouteForRole } from "@/lib/navigation";
+import type { User } from "@/hooks/useAuth";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login, isLoading } = useAuthApi();
+  const setAuthSession = useAuthStore((state) => state.login);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const getErrorMessage = (err: any) =>
+    err?.response?.data?.message || "Email hoặc mật khẩu không đúng. Vui lòng thử lại.";
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    router.push("/customer/dashboard");
+    setError("");
+
+    try {
+      const response = await login({ email, password });
+      const { user, accessToken, refreshToken } = response.data as {
+        user: User;
+        accessToken: string;
+        refreshToken: string;
+      };
+
+      setAuthSession(user, accessToken, refreshToken);
+      router.push(getDefaultRouteForRole(user.role));
+    } catch (err) {
+      setError(getErrorMessage(err));
+    }
   };
 
   return (
@@ -31,24 +49,34 @@ export default function LoginPage() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <FormField label={t("auth.email")}>
-          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@caremate.vn" />
+          <Input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="email@caremate.vn"
+            required
+            disabled={isLoading}
+          />
         </FormField>
         <FormField label={t("auth.password")}>
-          <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
+          <Input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="********"
+            required
+            disabled={isLoading}
+          />
         </FormField>
-        <Button type="submit" className="w-full">{t("common.login")}</Button>
+        {error ? (
+          <p className="rounded-[var(--radius-md)] bg-[var(--color-danger)]/10 px-3 py-2 text-sm text-[var(--color-danger)]">
+            {error}
+          </p>
+        ) : null}
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading ? "Đang đăng nhập..." : t("common.login")}
+        </Button>
       </form>
-
-      <div className="mt-6 pt-6 border-t border-[var(--color-border)]">
-        <p className="text-xs text-[var(--color-text-muted)] mb-3">Vào nhanh theo vai trò:</p>
-        <div className="flex flex-wrap gap-2">
-          {DEMO_ROLES.map((r) => (
-            <Link key={r.role} href={r.href}>
-              <Button variant="outline" size="sm">{r.label}</Button>
-            </Link>
-          ))}
-        </div>
-      </div>
 
       <p className="text-center text-sm text-[var(--color-text-secondary)] mt-6">
         {t("auth.noAccount")}{" "}

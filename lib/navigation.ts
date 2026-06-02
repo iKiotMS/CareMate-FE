@@ -1,4 +1,13 @@
 import type { NavItem } from "@/types";
+import type { UserRole } from "@/types";
+
+export const defaultRouteByRole: Record<UserRole, string> = {
+  customer: "/customer/dashboard",
+  cleaner: "/cleaner/dashboard",
+  admin: "/admin/dashboard",
+};
+
+export const getDefaultRouteForRole = (role: UserRole) => defaultRouteByRole[role];
 
 export const customerNav: NavItem[] = [
   { href: "/customer/dashboard", labelKey: "nav.customer.dashboard", icon: "LayoutDashboard" },
