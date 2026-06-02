@@ -1,19 +1,24 @@
 import { vi } from "@/locales/vi";
 
-type NestedRecord = { [key: string]: string | NestedRecord };
+type TranslationNode =
+  | string
+  | readonly unknown[]
+  | { readonly [key: string]: TranslationNode };
 
-function getNestedValue(obj: NestedRecord, path: string): string {
+function getNestedValue(obj: TranslationNode, path: string): string {
   const parts = path.split(".");
-  let current: string | NestedRecord = obj;
+  let current: TranslationNode = obj;
   for (const part of parts) {
-    if (typeof current !== "object" || current === null) return path;
-    current = current[part];
+    if (typeof current !== "object" || current === null || Array.isArray(current)) {
+      return path;
+    }
+    current = (current as { readonly [key: string]: TranslationNode })[part];
   }
   return typeof current === "string" ? current : path;
 }
 
 export function t(key: string, params?: Record<string, string | number>): string {
-  let text = getNestedValue(vi as NestedRecord, key);
+  let text = getNestedValue(vi, key);
   if (params) {
     Object.entries(params).forEach(([k, v]) => {
       text = text.replace(`{${k}}`, String(v));

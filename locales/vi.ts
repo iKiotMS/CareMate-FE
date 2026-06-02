@@ -18,7 +18,7 @@ export const vi = {
     search: "Tìm kiếm",
     filter: "Lọc",
     action: "Thao tác",
-    view: "Xem",
+    view: "Chi tiết",
     edit: "Sửa",
     delete: "Xóa",
     loading: "Đang tải...",
@@ -94,6 +94,50 @@ export const vi = {
     statsOrders: "Đơn hoàn thành",
     statsCleaners: "Nhân viên uy tín",
     statsRating: "Điểm hài lòng TB",
+    stats: [
+      { value: "10.000+", label: "Khách hàng", iconKey: "home" },
+      { value: "500+", label: "Nhân viên", iconKey: "userCheck" },
+      { value: "4.9/5", label: "Đánh giá", iconKey: "star" },
+    ],
+    services: [
+      {
+        title: "Dọn dẹp nhà cửa",
+        description: "Gói dọn dẹp toàn diện cho mọi ngóc ngách trong ngôi nhà của bạn, đảm bảo sạch sẽ và ngăn nắp.",
+        iconKey: "building",
+      },
+      {
+        title: "Vệ sinh văn phòng",
+        description: "Giải pháp vệ sinh chuyên nghiệp cho không gian làm việc, giúp tăng năng suất và sự thoải mái.",
+        iconKey: "calendarDays",
+      },
+      {
+        title: "Dịch vụ định kỳ",
+        description: "Đặt lịch dọn dẹp thường xuyên theo tuần hoặc tháng để duy trì sự sạch sẽ liên tục.",
+        iconKey: "shield",
+      },
+    ],
+    steps: [
+      {
+        title: "Đặt lịch",
+        description: "Chọn dịch vụ và thời gian phù hợp với bạn.",
+        iconKey: "clock4",
+      },
+      {
+        title: "Xác nhận",
+        description: "Nhận thông tin nhân viên và xác nhận đơn hàng nhanh chóng.",
+        iconKey: "checkCircle2",
+      },
+      {
+        title: "Thư giãn",
+        description: "Tận hưởng không gian sạch sẽ sau khi hoàn thành.",
+        iconKey: "sparkles",
+      },
+    ],
+    commitments: [
+      { title: "Bảo mật tuyệt đối", iconKey: "shieldCheck" },
+      { title: "Nhân viên đã xác minh", iconKey: "userCheck" },
+      { title: "Hoàn tiền nếu không hài lòng", iconKey: "arrowRight" },
+    ],
   },
   auth: {
     loginTitle: "Đăng nhập",
@@ -105,10 +149,11 @@ export const vi = {
     forgotPassword: "Quên mật khẩu?",
     noAccount: "Chưa có tài khoản?",
     hasAccount: "Đã có tài khoản?",
-    demoHint: "Demo: chọn vai trò để vào portal tương ứng",
-    roleCustomer: "Khách hàng",
-    roleCleaner: "Nhân viên dọn",
-    roleAdmin: "Quản trị viên",
+    hint: "Nhập email và mật khẩu của bạn để đăng nhập",
+    fullNamePlaceholder: "Nguyễn Văn A",
+    emailPlaceholder: "nguyenvana@gmail.com",
+    passwordPlaceholder: "********",
+    phoneNumberPlaceholder: "0123456789",
   },
   customer: {
     dashboard: {
@@ -142,7 +187,7 @@ export const vi = {
     orders: {
       title: "Đơn hàng",
       orderId: "Mã đơn",
-      date: "Ngày",
+      date: "Ngày đặt",
       status: "Trạng thái",
       cleaner: "Nhân viên",
       notAssigned: "Chưa phân công",

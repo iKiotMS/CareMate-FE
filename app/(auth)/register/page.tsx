@@ -63,6 +63,7 @@ export default function RegisterPage() {
           <Input
             value={form.fullName}
             onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+            placeholder={t("auth.fullNamePlaceholder")}
             required
             disabled={isLoading}
           />
@@ -72,6 +73,7 @@ export default function RegisterPage() {
             type="email"
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
+            placeholder={t("auth.emailPlaceholder")}
             required
             disabled={isLoading}
           />
@@ -80,6 +82,7 @@ export default function RegisterPage() {
           <Input
             value={form.phone}
             onChange={(e) => setForm({ ...form, phone: e.target.value })}
+            placeholder={t("auth.phoneNumberPlaceholder")}
             disabled={isLoading}
           />
         </FormField>
@@ -88,6 +91,7 @@ export default function RegisterPage() {
             type="password"
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
+            placeholder={t("auth.passwordPlaceholder")}
             required
             disabled={isLoading}
           />

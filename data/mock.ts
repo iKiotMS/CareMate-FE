@@ -175,10 +175,11 @@ export const MOCK_REVIEWS: Review[] = [
 
 export const MOCK_NOTIFICATIONS: Record<string, Notification[]> = {
   customer: [
-    { _id: "n1", title: "Đã phân công nhân viên", message: "Trần Văn Hùng sẽ đến dọn vào 02/06 lúc 09:00", type: "info", read: false, createdAt: "2026-05-28T09:00:00Z" },
-    { _id: "n2", title: "Nhân viên đã nhận việc", message: "Đơn #ord001 đã được xác nhận", type: "success", read: true, createdAt: "2026-05-28T10:00:00Z" },
-    { _id: "n3", title: "Bắt đầu dọn dẹp", message: "Nhân viên đã check-in tại địa chỉ của bạn", type: "info", read: false, createdAt: "2026-06-02T09:05:00Z" },
-    { _id: "n4", title: "Hoàn thành dịch vụ", message: "Vui lòng đánh giá dịch vụ đơn #ord003", type: "success", read: false, createdAt: "2026-05-25T11:30:00Z" },
+    { _id: "n1", title: "Hoàn thành dịch vụ", message: "Vệ sinh tổng quát cho căn hộ A-1204 đã hoàn thành xuất sắc. Cảm ơn quý khách đã sử dụng CleanFlow!", type: "success", read: false, createdAt: "2026-06-02T11:00:00Z" },
+    { _id: "n2", title: "Bắt đầu dọn dẹp", message: "Nhân viên của chúng tôi đã bắt đầu công việc tại địa chỉ của bạn. Bạn có thể theo dõi tiến độ thực hiệp.", type: "info", read: false, createdAt: "2026-06-02T09:05:00Z" },
+    { _id: "n3", title: "Đã phân công nhân viên", message: "Chuyên gia Lê Thị Thanh đã được điều phối để yêu cầu dặt lịch của bạn.", type: "info", read: false, createdAt: "2026-05-28T09:00:00Z" },
+    { _id: "n4", title: "Ưu đãi cuối tuần: Giảm 20%", message: "Chi duy nhất cuối tuần này, nhận ngay ưu đãi 20% cho dịch vụ vệ sinh máy lạnh. Nhập mã: CLEAN20.", type: "promo", read: false, createdAt: "2026-06-01T18:30:00Z" },
+    { _id: "n5", title: "Cập nhật ứng dụng", message: "CleanFlow v2.4.0 sắn sàng với lịnh năng theo dõi vị trí bản đồ.", type: "warning", read: true, createdAt: "2026-05-20T15:00:00Z" },
   ],
   cleaner: [
     { _id: "cn1", title: "Việc mới khả dụng", message: "Có đơn PENDING tại Quận 3 — 05/06", type: "info", read: false, createdAt: "2026-05-30T10:00:00Z" },

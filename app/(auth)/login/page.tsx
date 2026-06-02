@@ -50,7 +50,7 @@ export default function LoginPage() {
   return (
     <Card padding="lg" className="shadow-[var(--shadow-lg)]">
       <h1 className="text-2xl font-bold text-[var(--color-text)] mb-1">{t("auth.loginTitle")}</h1>
-      <p className="text-sm text-[var(--color-text-muted)] mb-6">{t("auth.demoHint")}</p>
+      <p className="text-sm text-[var(--color-text-muted)] mb-6">{t("auth.hint")}</p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <FormField label={t("auth.email")}>
@@ -58,7 +58,7 @@ export default function LoginPage() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="email@caremate.vn"
+            placeholder={t("auth.emailPlaceholder")}
             required
             disabled={isLoading}
           />
@@ -68,7 +68,7 @@ export default function LoginPage() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="********"
+            placeholder={t("auth.passwordPlaceholder")}
             required
             disabled={isLoading}
           />

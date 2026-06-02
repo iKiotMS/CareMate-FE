@@ -125,9 +125,9 @@ export default function BookCleaningPage() {
         </div>
       )}
 
-      <Stepper steps={steps} currentStep={step} className="mb-8 max-w-2xl" />
+      <Stepper steps={steps} currentStep={step} className="mb-8 max-w-4xl" />
 
-      <Card padding="lg" className="max-w-2xl">
+      <Card padding="lg" className="max-w-4xl">
         {step === 1 && (
           <div className="space-y-4">
             <FormField label={t("customer.book.date")}>
