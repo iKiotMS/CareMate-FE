@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Stepper } from "@/components/ui/Stepper";
@@ -32,6 +32,7 @@ export default function BookCleaningPage() {
   const [error, setError] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
   const [form, setForm] = useState({
     date: "",
     time: "",
@@ -47,7 +48,9 @@ export default function BookCleaningPage() {
 
   const tasks: TaskItem[] = Array.isArray(tasksRaw) ? tasksRaw : [];
   const activeTasks = tasks.filter((task) => task.isActive);
-  const selectedTasks = activeTasks.filter((task) => form.taskIds.includes(task._id));
+  const selectedTasks = activeTasks.filter((task) =>
+    form.taskIds.includes(task._id),
+  );
 
   const steps = [
     { id: 1, label: t("customer.book.step1") },
@@ -76,6 +79,21 @@ export default function BookCleaningPage() {
     if (!files?.length) return;
     setSelectedFiles((prev) => [...prev, ...Array.from(files)]);
   };
+
+  const removeSelectedFile = (index: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  useEffect(() => {
+    // create object URLs for local previews
+    const urls = selectedFiles.map((f) => URL.createObjectURL(f));
+    setPreviews(urls);
+
+    // cleanup when selectedFiles change or component unmounts
+    return () => {
+      urls.forEach((u) => URL.revokeObjectURL(u));
+    };
+  }, [selectedFiles]);
 
   const uploadAllPhotos = async (): Promise<string[]> => {
     if (selectedFiles.length === 0) return photoUrls;
@@ -139,10 +157,15 @@ export default function BookCleaningPage() {
               />
             </FormField>
             <FormField label={t("customer.book.timeSlot")}>
-              <Select value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })}>
+              <Select
+                value={form.time}
+                onChange={(e) => setForm({ ...form, time: e.target.value })}
+              >
                 <option value="">— Chọn khung giờ —</option>
                 {TIME_SLOTS.map((s) => (
-                  <option key={s} value={s}>{s}</option>
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
                 ))}
               </Select>
             </FormField>
@@ -154,7 +177,10 @@ export default function BookCleaningPage() {
               />
             </FormField>
             <FormField label={t("customer.book.note")}>
-              <Textarea value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
+              <Textarea
+                value={form.note}
+                onChange={(e) => setForm({ ...form, note: e.target.value })}
+              />
             </FormField>
           </div>
         )}
@@ -163,13 +189,18 @@ export default function BookCleaningPage() {
           <div>
             {tasksLoading ? (
               <p className="flex items-center gap-2 text-sm text-[var(--color-text-muted)]">
-                <Loader2 className="w-4 h-4 animate-spin" /> Đang tải danh mục công việc...
+                <Loader2 className="w-4 h-4 animate-spin" /> Đang tải danh mục
+                công việc...
               </p>
             ) : activeTasks.length === 0 ? (
-              <p className="text-sm text-amber-600">Chưa có công việc. Khởi động BE để seed TaskCatalog.</p>
+              <p className="text-sm text-amber-600">
+                Chưa có công việc. Khởi động BE để seed TaskCatalog.
+              </p>
             ) : (
               <>
-                <p className="text-sm text-[var(--color-text-secondary)] mb-4">{t("customer.book.selectTasks")}</p>
+                <p className="text-sm text-[var(--color-text-secondary)] mb-4">
+                  {t("customer.book.selectTasks")}
+                </p>
                 <div className="grid sm:grid-cols-2 gap-3">
                   {activeTasks.map((task) => {
                     const selected = form.taskIds.includes(task._id);
@@ -187,12 +218,18 @@ export default function BookCleaningPage() {
                       >
                         <div className="flex items-start justify-between">
                           <div>
-                            <p className="font-medium text-[var(--color-text)]">{task.name}</p>
+                            <p className="font-medium text-[var(--color-text)]">
+                              {task.name}
+                            </p>
                             {task.description && (
-                              <p className="text-xs text-[var(--color-text-muted)] mt-1">{task.description}</p>
+                              <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                                {task.description}
+                              </p>
                             )}
                           </div>
-                          {selected && <Check className="w-5 h-5 text-[var(--color-primary)] shrink-0" />}
+                          {selected && (
+                            <Check className="w-5 h-5 text-[var(--color-primary)] shrink-0" />
+                          )}
                         </div>
                       </button>
                     );
@@ -213,39 +250,103 @@ export default function BookCleaningPage() {
               className="hidden"
               onChange={(e) => handleFiles(e.target.files)}
             />
-            <p className="text-sm text-[var(--color-text-secondary)] mb-4">{t("customer.book.uploadPhotos")}</p>
+            <p className="text-sm text-[var(--color-text-secondary)] mb-4">
+              {t("customer.book.uploadPhotos")}
+            </p>
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
               className="w-full border-2 border-dashed border-[var(--color-border)] rounded-[var(--radius-xl)] p-12 text-center hover:border-[var(--color-primary)] transition-colors"
             >
               <Upload className="w-10 h-10 mx-auto text-[var(--color-text-muted)] mb-3" />
-              <p className="text-sm text-[var(--color-text-secondary)]">Chọn ảnh (tùy chọn)</p>
+              <p className="text-sm text-[var(--color-text-secondary)]">
+                Chọn ảnh (tùy chọn)
+              </p>
             </button>
             {(selectedFiles.length > 0 || photoUrls.length > 0) && (
               <p className="text-sm text-[var(--color-success)] mt-2">
-                {selectedFiles.length} file chờ upload · {photoUrls.length} URL đã có
+                {selectedFiles.length} file chờ upload · {photoUrls.length} URL
+                đã có
               </p>
+            )}
+            {previews.length > 0 && (
+              <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {previews.map((src, i) => (
+                  <div
+                    key={i}
+                    className="relative rounded-[var(--radius-md)] overflow-hidden border"
+                  >
+                    <img
+                      src={src}
+                      alt={`preview-${i}`}
+                      className="w-full h-24 object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeSelectedFile(i)}
+                      className="absolute top-1 right-1 bg-white/80 rounded-full p-1 text-xs"
+                      aria-label="Remove photo"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {photoUrls.length > 0 && (
+              <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {photoUrls.map((src, i) => (
+                  <div
+                    key={`url-${i}`}
+                    className="rounded-[var(--radius-md)] overflow-hidden border"
+                  >
+                    <img
+                      src={src}
+                      alt={`uploaded-${i}`}
+                      className="w-full h-24 object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         )}
 
         {step === 4 && (
           <div className="space-y-4">
-            <h3 className="font-semibold text-[var(--color-text)]">{t("customer.book.summary")}</h3>
+            <h3 className="font-semibold text-[var(--color-text)]">
+              {t("customer.book.summary")}
+            </h3>
             <div className="rounded-[var(--radius-lg)] bg-[var(--color-bg-muted)] p-4 space-y-2 text-sm">
-              <p><strong>{t("customer.book.date")}:</strong> {form.date}</p>
-              <p><strong>{t("customer.book.timeSlot")}:</strong> {form.time}</p>
-              <p><strong>{t("customer.book.address")}:</strong> {form.address}</p>
-              <p><strong>{t("customer.book.totalTasks")}:</strong> {selectedTasks.length}</p>
+              <p>
+                <strong>{t("customer.book.date")}:</strong> {form.date}
+              </p>
+              <p>
+                <strong>{t("customer.book.timeSlot")}:</strong> {form.time}
+              </p>
+              <p>
+                <strong>{t("customer.book.address")}:</strong> {form.address}
+              </p>
+              <p>
+                <strong>{t("customer.book.totalTasks")}:</strong>{" "}
+                {selectedTasks.length}
+              </p>
               <ul className="list-disc list-inside text-[var(--color-text-secondary)]">
                 {selectedTasks.map((task) => (
                   <li key={task._id}>{task.name}</li>
                 ))}
               </ul>
             </div>
-            <Button variant="secondary" onClick={submitOrder} disabled={busy} className="w-full">
-              {busy ? <Loader2 className="w-4 h-4 animate-spin inline mr-2" /> : null}
+            <Button
+              variant="secondary"
+              onClick={submitOrder}
+              disabled={busy}
+              className="w-full"
+            >
+              {busy ? (
+                <Loader2 className="w-4 h-4 animate-spin inline mr-2" />
+              ) : null}
               {t("customer.book.placeOrder")} (bỏ qua thanh toán)
             </Button>
           </div>
@@ -263,7 +364,9 @@ export default function BookCleaningPage() {
                   key={p.id}
                   className={cn(
                     "flex items-center gap-3 p-4 rounded-[var(--radius-lg)] border-2 cursor-pointer",
-                    form.payment === p.id ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)]" : "border-[var(--color-border)]",
+                    form.payment === p.id
+                      ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)]"
+                      : "border-[var(--color-border)]",
                   )}
                 >
                   <input
@@ -275,7 +378,9 @@ export default function BookCleaningPage() {
                   />
                   <div>
                     <p className="font-medium">{p.name}</p>
-                    <p className="text-xs text-[var(--color-text-muted)]">{p.description}</p>
+                    <p className="text-xs text-[var(--color-text-muted)]">
+                      {p.description}
+                    </p>
                   </div>
                   <span className="ml-auto text-xs px-2 py-0.5 rounded-full bg-[var(--color-warning-soft)] text-[var(--color-warning)]">
                     {t("common.comingSoon")}
@@ -287,11 +392,18 @@ export default function BookCleaningPage() {
         )}
 
         <div className="flex justify-between mt-8 pt-6 border-t border-[var(--color-border)]">
-          <Button variant="outline" onClick={() => setStep((s) => Math.max(1, s - 1))} disabled={step === 1 || busy}>
+          <Button
+            variant="outline"
+            onClick={() => setStep((s) => Math.max(1, s - 1))}
+            disabled={step === 1 || busy}
+          >
             {t("common.previous")}
           </Button>
           {step < 5 ? (
-            <Button onClick={() => setStep((s) => s + 1)} disabled={!canNext() || busy}>
+            <Button
+              onClick={() => setStep((s) => s + 1)}
+              disabled={!canNext() || busy}
+            >
               {t("common.next")}
             </Button>
           ) : (
