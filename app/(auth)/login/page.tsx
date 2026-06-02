@@ -29,10 +29,15 @@ export default function LoginPage() {
 
     try {
       const response = await login({ email, password });
-      const { user, accessToken, refreshToken } = response.data as {
-        user: User;
+      const { user: rawUser, accessToken, refreshToken } = response.data as {
+        user: Record<string, unknown>;
         accessToken: string;
         refreshToken: string;
+      };
+
+      const user: User = {
+        ...(rawUser as unknown as User),
+        _id: String(rawUser._id ?? ""),
       };
 
       setAuthSession(user, accessToken, refreshToken);

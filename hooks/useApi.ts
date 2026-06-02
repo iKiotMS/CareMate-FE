@@ -1,5 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import Cookies from "js-cookie";
 import { apiClient } from "@/services/api-client";
+
+const hasToken = () =>
+  typeof window !== "undefined" && !!Cookies.get("accessToken");
 
 export const useAuth = () => {
   const queryClient = useQueryClient();
@@ -44,49 +48,29 @@ export const useUser = () => {
       const response = await apiClient.get("/users/me");
       return response.data;
     },
-    enabled: typeof window !== "undefined",
+    enabled: hasToken(),
+    retry: false,
   });
 };
 
-// ORDERS - Admin
-export const useOrders = (filters?: any) => {
-  return useQuery({
-    queryKey: ["orders", filters],
-    queryFn: async () => {
-      const response = await apiClient.get("/orders", { params: filters });
-      return response.data;
-    },
-  });
-};
+/** Payload tạo đơn — khớp CreateOrderDto BE */
+export interface CreateOrderPayload {
+  scheduledDate: string;
+  scheduledTime: string;
+  address: string;
+  note?: string;
+  taskIds: string[];
+  photosBeforeBooking?: string[];
+}
 
-export const useOrder = (orderId: string) => {
-  return useQuery({
-    queryKey: ["orders", orderId],
-    queryFn: async () => {
-      const response = await apiClient.get(`/orders/${orderId}`);
-      return response.data;
-    },
-    enabled: !!orderId,
-  });
-};
-
-export const useOrderStats = () => {
-  return useQuery({
-    queryKey: ["orders", "stats"],
-    queryFn: async () => {
-      const response = await apiClient.get("/orders/stats");
-      return response.data;
-    },
-  });
-};
-
-// ORDERS - Mutations
 export const useCreateOrder = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: any) => apiClient.post("/customers/orders", data),
+    mutationFn: (data: CreateOrderPayload) =>
+      apiClient.post("/customers/orders", data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["customer", "orders"] });
+      queryClient.invalidateQueries({ queryKey: ["cleaner", "available-orders"] });
     },
   });
 };
@@ -95,9 +79,10 @@ export const useCancelOrder = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ orderId, reason }: { orderId: string; reason?: string }) =>
-      apiClient.patch(`/orders/${orderId}/cancel`, { reason }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      apiClient.patch(`/customers/orders/${orderId}/cancel`, { reason }),
+    onSuccess: (_data, { orderId }) => {
+      queryClient.invalidateQueries({ queryKey: ["customer", "orders"] });
+      queryClient.invalidateQueries({ queryKey: ["customer", "orders", orderId] });
     },
   });
 };
@@ -105,24 +90,33 @@ export const useCancelOrder = () => {
 export const useSubmitReview = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ orderId, rating, comment }: any) =>
-      apiClient.patch(`/orders/${orderId}/review`, { rating, comment }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
+    mutationFn: ({
+      orderId,
+      rating,
+      comment,
+    }: {
+      orderId: string;
+      rating: number;
+      comment?: string;
+    }) =>
+      apiClient.patch(`/customers/orders/${orderId}/review`, { rating, comment }),
+    onSuccess: (_data, { orderId }) => {
+      queryClient.invalidateQueries({ queryKey: ["customer", "orders"] });
+      queryClient.invalidateQueries({ queryKey: ["customer", "orders", orderId] });
     },
   });
 };
 
-// ORDERS - Customer endpoints
 export const useCustomerOrders = (status?: string) => {
   return useQuery({
-    queryKey: ["customer", "orders", status],
+    queryKey: ["customer", "orders", status ?? "ALL"],
     queryFn: async () => {
       const response = await apiClient.get("/customers/orders", {
-        params: { status },
+        params: status && status !== "ALL" ? { status } : {},
       });
       return response.data;
     },
+    enabled: hasToken(),
   });
 };
 
@@ -133,11 +127,10 @@ export const useCustomerOrderDetail = (orderId: string) => {
       const response = await apiClient.get(`/customers/orders/${orderId}`);
       return response.data;
     },
-    enabled: !!orderId,
+    enabled: hasToken() && !!orderId,
   });
 };
 
-// ORDERS - Cleaner endpoints
 export const useCleanerJobs = () => {
   return useQuery({
     queryKey: ["cleaner", "jobs"],
@@ -145,6 +138,7 @@ export const useCleanerJobs = () => {
       const response = await apiClient.get("/cleaner/jobs");
       return response.data;
     },
+    enabled: hasToken(),
   });
 };
 
@@ -155,21 +149,10 @@ export const useCleanerJobDetail = (jobId: string) => {
       const response = await apiClient.get(`/cleaner/jobs/${jobId}`);
       return response.data;
     },
-    enabled: !!jobId,
+    enabled: hasToken() && !!jobId,
   });
 };
 
-export const useCleanerWorkHistory = () => {
-  return useQuery({
-    queryKey: ["cleaner", "work-history"],
-    queryFn: async () => {
-      const response = await apiClient.get("/cleaner/work-history");
-      return response.data;
-    },
-  });
-};
-
-// CLEANER MUTATIONS
 export const useAvailableOrders = () => {
   return useQuery({
     queryKey: ["cleaner", "available-orders"],
@@ -177,6 +160,8 @@ export const useAvailableOrders = () => {
       const response = await apiClient.get("/cleaner/available-orders");
       return response.data;
     },
+    enabled: hasToken(),
+    refetchInterval: 30_000,
   });
 };
 
@@ -186,21 +171,77 @@ export const useApplyForOrder = () => {
     mutationFn: (orderId: string) =>
       apiClient.post(`/cleaner/available-orders/${orderId}/apply`, {}),
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["cleaner", "available-orders"],
-      });
+      queryClient.invalidateQueries({ queryKey: ["cleaner", "available-orders"] });
       queryClient.invalidateQueries({ queryKey: ["cleaner", "jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["customer", "orders"] });
     },
   });
+};
+
+export const useTaskCatalog = (activeOnly?: boolean) => {
+  return useQuery({
+    queryKey: ["tasks", { activeOnly: !!activeOnly }],
+    queryFn: async () => {
+      const response = await apiClient.get("/tasks", {
+        params: activeOnly ? { activeOnly: "true" } : {},
+      });
+      return response.data;
+    },
+  });
+};
+
+export const useUploadPhotos = () => {
+  return useMutation({
+    mutationFn: (files: File[]) => {
+      const formData = new FormData();
+      files.forEach((file) => formData.append("files", file));
+      return apiClient.post("/uploads/photos", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+    },
+  });
+};
+
+// ——— Admin / khác (giữ tương thích) ———
+
+export const useOrders = (filters?: Record<string, string>) => {
+  return useQuery({
+    queryKey: ["orders", filters],
+    queryFn: async () => {
+      const response = await apiClient.get("/orders", { params: filters });
+      return response.data;
+    },
+    enabled: hasToken(),
+  });
+};
+
+export const useOrder = (orderId: string) => {
+  return useQuery({
+    queryKey: ["orders", orderId],
+    queryFn: async () => {
+      const response = await apiClient.get(`/orders/${orderId}`);
+      return response.data;
+    },
+    enabled: hasToken() && !!orderId,
+  });
+};
+
+const invalidateCleanerJob = (
+  queryClient: ReturnType<typeof useQueryClient>,
+  jobId: string,
+) => {
+  queryClient.invalidateQueries({ queryKey: ["cleaner", "jobs"] });
+  queryClient.invalidateQueries({ queryKey: ["cleaner", "jobs", jobId] });
+  queryClient.invalidateQueries({ queryKey: ["cleaner", "work-history"] });
 };
 
 export const useAcceptJob = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (jobId: string) =>
-      apiClient.patch(`/orders/${jobId}/accept`, {}),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cleaner", "jobs"] });
+      apiClient.patch(`/cleaner/jobs/${jobId}/accept`, {}),
+    onSuccess: (_data, jobId) => {
+      invalidateCleanerJob(queryClient, jobId);
     },
   });
 };
@@ -209,9 +250,9 @@ export const useCheckInJob = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ jobId, photos }: { jobId: string; photos: string[] }) =>
-      apiClient.patch(`/orders/${jobId}/check-in`, { photosCheckin: photos }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cleaner", "jobs"] });
+      apiClient.patch(`/cleaner/jobs/${jobId}/check-in`, { photosCheckin: photos }),
+    onSuccess: (_data, { jobId }) => {
+      invalidateCleanerJob(queryClient, jobId);
     },
   });
 };
@@ -230,13 +271,13 @@ export const useMarkTaskDone = () => {
       photoBefore?: string;
       photoAfter?: string;
     }) =>
-      apiClient.patch(`/orders/${jobId}/mark-task-done`, {
+      apiClient.patch(`/cleaner/jobs/${jobId}/mark-task-done`, {
         taskCatalogId,
         photoBefore,
         photoAfter,
       }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cleaner", "jobs"] });
+    onSuccess: (_data, { jobId }) => {
+      invalidateCleanerJob(queryClient, jobId);
     },
   });
 };
@@ -245,68 +286,187 @@ export const useCompleteJob = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (jobId: string) =>
-      apiClient.patch(`/orders/${jobId}/complete`, {}),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cleaner", "jobs"] });
-      queryClient.invalidateQueries({ queryKey: ["cleaner", "work-history"] });
+      apiClient.patch(`/cleaner/jobs/${jobId}/complete`, {}),
+    onSuccess: (_data, jobId) => {
+      invalidateCleanerJob(queryClient, jobId);
     },
   });
 };
 
-// TASKS
-export const useTaskCatalog = (activeOnly?: boolean) => {
+export const useCleanerWorkHistory = () => {
   return useQuery({
-    queryKey: ["tasks", { activeOnly }],
+    queryKey: ["cleaner", "work-history"],
     queryFn: async () => {
-      const response = await apiClient.get("/tasks", {
-        params: activeOnly ? { activeOnly: "true" } : {},
+      const response = await apiClient.get("/cleaner/work-history");
+      return response.data;
+    },
+    enabled: hasToken(),
+  });
+};
+
+// ——— Admin ———
+
+export const useAdminDashboardStats = () => {
+  return useQuery({
+    queryKey: ["admin", "dashboard"],
+    queryFn: async () => {
+      const response = await apiClient.get("/admin/dashboard/stats");
+      return response.data;
+    },
+    enabled: hasToken(),
+  });
+};
+
+export const useAdminCustomers = (search?: string, page = 1) => {
+  return useQuery({
+    queryKey: ["admin", "customers", { search, page }],
+    queryFn: async () => {
+      const response = await apiClient.get("/admin/customers", {
+        params: { search: search || undefined, page, limit: 20 },
       });
       return response.data;
     },
+    enabled: hasToken(),
   });
 };
 
-export const useCreateTask = () => {
+export const useAdminLockCustomer = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: any) => apiClient.post("/tasks", data),
+    mutationFn: ({ id, lock }: { id: string; lock: boolean }) =>
+      apiClient.patch(`/admin/customers/${id}/${lock ? "lock" : "unlock"}`, {}),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "customers"] });
+    },
+  });
+};
+
+export const useAdminCleaners = (search?: string, page = 1) => {
+  return useQuery({
+    queryKey: ["admin", "cleaners", { search, page }],
+    queryFn: async () => {
+      const response = await apiClient.get("/admin/cleaners", {
+        params: { search: search || undefined, page, limit: 20 },
+      });
+      return response.data;
+    },
+    enabled: hasToken(),
+  });
+};
+
+export const useAdminCreateCleaner = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: {
+      fullName: string;
+      email: string;
+      phone?: string;
+      password: string;
+    }) => apiClient.post("/admin/cleaners", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "cleaners"] });
+    },
+  });
+};
+
+export const useAdminLockCleaner = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, lock }: { id: string; lock: boolean }) =>
+      apiClient.patch(`/admin/cleaners/${id}/${lock ? "lock" : "unlock"}`, {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "cleaners"] });
+    },
+  });
+};
+
+export const useAdminOrders = (filters?: {
+  status?: string;
+  page?: number;
+  limit?: number;
+}) => {
+  return useQuery({
+    queryKey: ["admin", "orders", filters],
+    queryFn: async () => {
+      const response = await apiClient.get("/admin/orders", {
+        params: {
+          status: filters?.status || undefined,
+          page: filters?.page ?? 1,
+          limit: filters?.limit ?? 50,
+        },
+      });
+      return response.data;
+    },
+    enabled: hasToken(),
+  });
+};
+
+export const useAdminAssignCleaner = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ orderId, cleanerId }: { orderId: string; cleanerId: string }) =>
+      apiClient.patch(`/admin/orders/${orderId}/assign-cleaner`, { cleanerId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "orders"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "dashboard"] });
+    },
+  });
+};
+
+export const useAdminReassignCleaner = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ orderId, cleanerId }: { orderId: string; cleanerId: string }) =>
+      apiClient.patch(`/admin/orders/${orderId}/reassign-cleaner`, { cleanerId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "orders"] });
+    },
+  });
+};
+
+export const useAdminCancelOrder = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ orderId, reason }: { orderId: string; reason?: string }) =>
+      apiClient.patch(`/admin/orders/${orderId}/cancel`, { reason }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "orders"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "dashboard"] });
+    },
+  });
+};
+
+export const useAdminTasks = () => {
+  return useQuery({
+    queryKey: ["admin", "tasks"],
+    queryFn: async () => {
+      const response = await apiClient.get("/admin/tasks");
+      return response.data;
+    },
+    enabled: hasToken(),
+  });
+};
+
+export const useAdminCreateTask = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { name: string; slug: string; sortOrder?: number }) =>
+      apiClient.post("/admin/tasks", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "tasks"] });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
     },
   });
 };
 
-export const useUpdateTask = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ taskId, data }: { taskId: string; data: any }) =>
-      apiClient.patch(`/tasks/${taskId}`, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
-    },
-  });
-};
-
-export const useToggleTaskActive = () => {
+export const useAdminToggleTask = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (taskId: string) =>
-      apiClient.patch(`/tasks/${taskId}/toggle`, {}),
+      apiClient.patch(`/admin/tasks/${taskId}/toggle`, {}),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "tasks"] });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
-    },
-  });
-};
-
-// UPLOADS
-export const useUploadPhotos = () => {
-  return useMutation({
-    mutationFn: (files: File[]) => {
-      const formData = new FormData();
-      files.forEach((file) => formData.append("files", file));
-      return apiClient.post("/uploads/photos", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
     },
   });
 };
