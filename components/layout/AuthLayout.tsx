@@ -7,7 +7,7 @@ import { ThemeToggle } from "./ThemeToggle";
 export function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-[var(--color-bg)] flex flex-col">
-      <div className="flex items-center justify-between p-4 max-w-md mx-auto w-full">
+      <div className="flex items-center justify-between p-4 max-w-6xl mx-auto w-full">
         <Link href="/" className="flex items-center gap-2 font-bold text-[var(--color-text)]">
           <span className="text-xl">🧹</span>
           {t("app.name")}

@@ -2,7 +2,12 @@
 
 import { cn } from "@/lib/cn";
 
-export function SimpleBarChart({ data, labelKey, valueKey, formatValue }: {
+export function SimpleBarChart({
+  data,
+  labelKey,
+  valueKey,
+  formatValue,
+}: {
   data: Record<string, string | number>[];
   labelKey: string;
   valueKey: string;
@@ -23,7 +28,9 @@ export function SimpleBarChart({ data, labelKey, valueKey, formatValue }: {
               className="w-full rounded-t-[var(--radius-sm)] bg-[var(--color-primary)] transition-all"
               style={{ height: `${Math.max(height, 4)}%` }}
             />
-            <span className="text-xs text-[var(--color-text-secondary)]">{String(item[labelKey])}</span>
+            <span className="text-xs text-[var(--color-text-secondary)]">
+              {String(item[labelKey])}
+            </span>
           </div>
         );
       })}
@@ -31,27 +38,68 @@ export function SimpleBarChart({ data, labelKey, valueKey, formatValue }: {
   );
 }
 
-export function ProgressBar({ value, max = 100, label }: { value: number; max?: number; label?: string }) {
+export function ProgressBar({
+  value,
+  max = 100,
+  label,
+}: {
+  value: number;
+  max?: number;
+  label?: string;
+}) {
   const pct = Math.min((value / max) * 100, 100);
   return (
     <div>
-      {label && <div className="flex justify-between text-sm mb-1"><span>{label}</span><span>{pct.toFixed(0)}%</span></div>}
+      {label && (
+        <div className="flex justify-between text-sm mb-1">
+          <span>{label}</span>
+          <span>{pct.toFixed(0)}%</span>
+        </div>
+      )}
       <div className="h-2 rounded-full bg-[var(--color-bg-muted)] overflow-hidden">
-        <div className="h-full rounded-full bg-[var(--color-primary)] transition-all" style={{ width: `${pct}%` }} />
+        <div
+          className="h-full rounded-full bg-[var(--color-primary)] transition-all"
+          style={{ width: `${pct}%` }}
+        />
       </div>
     </div>
   );
 }
 
-export function PhotoGrid({ photos, placeholder = "📷" }: { photos?: string[]; placeholder?: string }) {
+export function PhotoGrid({
+  photos,
+  placeholder = "📷",
+}: {
+  photos?: string[];
+  placeholder?: string;
+}) {
   if (!photos?.length) {
-    return <div className="text-sm text-[var(--color-text-muted)]">{placeholder} Chưa có ảnh</div>;
+    return (
+      <div className="text-sm text-[var(--color-text-muted)]">
+        {placeholder} Chưa có ảnh
+      </div>
+    );
   }
+
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-      {photos.map((_, i) => (
-        <div key={i} className="aspect-video rounded-[var(--radius-md)] bg-[var(--color-bg-muted)] border border-[var(--color-border)] flex items-center justify-center text-2xl">
-          {placeholder}
+      {photos.map((src, i) => (
+        <div
+          key={i}
+          className="aspect-video rounded-[var(--radius-md)] overflow-hidden border border-[var(--color-border)] bg-[var(--color-bg-muted)]"
+        >
+          <img
+            src={src}
+            alt={`photo-${i}`}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              // replace broken image with placeholder text container
+              const el = e.currentTarget as HTMLImageElement;
+              el.style.display = "none";
+              const parent = el.parentElement;
+              if (parent) parent.textContent = placeholder;
+            }}
+          />
         </div>
       ))}
     </div>

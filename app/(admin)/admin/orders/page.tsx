@@ -8,60 +8,173 @@ import { Button } from "@/components/ui/Button";
 import { Select, FormField } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import { t } from "@/lib/i18n";
-import { MOCK_ORDERS, MOCK_CLEANERS, formatDate } from "@/data/mock";
-import type { OrderStatus } from "@/types";
+import {
+  useAdminOrders,
+  useAdminCleaners,
+  useAdminAssignCleaner,
+  useAdminReassignCleaner,
+  useAdminCancelOrder,
+} from "@/hooks/useApi";
+import { formatOrderDate, orderIdShort } from "@/lib/format";
+import { getApiErrorMessage } from "@/lib/api-errors";
+import type { Order, OrderStatus, User } from "@/types";
+import { Loader2 } from "lucide-react";
 
 export default function AdminOrdersPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null);
-  const orders = MOCK_ORDERS.filter((o) => !statusFilter || o.status === statusFilter);
-  const detail = selectedOrder ? MOCK_ORDERS.find((o) => o._id === selectedOrder) : null;
+  const [cleanerIdInput, setCleanerIdInput] = useState("");
+  const [error, setError] = useState("");
+
+  const { data: ordersData, isLoading, refetch } = useAdminOrders({
+    status: statusFilter || undefined,
+  });
+  const { data: cleanersData } = useAdminCleaners();
+  const { mutateAsync: assignCleaner, isPending: assigning } = useAdminAssignCleaner();
+  const { mutateAsync: reassignCleaner, isPending: reassigning } = useAdminReassignCleaner();
+  const { mutateAsync: cancelOrder, isPending: cancelling } = useAdminCancelOrder();
+
+  const orders = ((ordersData as { orders?: Order[] })?.orders ?? []) as Order[];
+  const cleaners = ((cleanersData as { cleaners?: User[] })?.cleaners ?? []) as User[];
+  const detail = selectedOrder ? orders.find((o) => o._id === selectedOrder) : null;
+
+  const runAction = async (fn: () => Promise<unknown>) => {
+    setError("");
+    try {
+      await fn();
+      refetch();
+    } catch (err) {
+      setError(getApiErrorMessage(err));
+    }
+  };
 
   return (
     <div>
       <PageHeader title={t("admin.orders.title")} />
+
+      {error && (
+        <div className="mb-4 p-3 rounded-lg bg-red-50 text-red-700 text-sm">{error}</div>
+      )}
+
       <FormField label={t("common.filter")} className="max-w-xs mb-4">
         <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           <option value="">{t("common.all")}</option>
-          {["PENDING", "ASSIGNED", "ACCEPTED", "IN_PROGRESS", "COMPLETED", "CANCELLED"].map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
+          {["PENDING", "ASSIGNED", "ACCEPTED", "IN_PROGRESS", "REVIEW_PENDING", "COMPLETED", "CANCELLED"].map(
+            (s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ),
+          )}
         </Select>
       </FormField>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <DataTable headers={["Mã", "Khách", "Ngày", "Trạng thái", "Thao tác"]}>
-            {orders.map((o) => (
-              <TableRow key={o._id}>
-                <TableCell>#{o._id.slice(-6)}</TableCell>
-                <TableCell>{o.customerName}</TableCell>
-                <TableCell>{formatDate(o.scheduledDate)}</TableCell>
-                <TableCell><OrderStatusBadge status={o.status as OrderStatus} /></TableCell>
-                <TableCell><Button variant="ghost" size="sm" onClick={() => setSelectedOrder(o._id)}>{t("common.view")}</Button></TableCell>
-              </TableRow>
-            ))}
-          </DataTable>
-        </div>
+      {isLoading ? (
+        <p className="flex items-center gap-2">
+          <Loader2 className="w-5 h-5 animate-spin" /> {t("common.loading")}
+        </p>
+      ) : (
+        <div>
+          <div className="lg:col-span-2">
+            <DataTable headers={["Mã", "Địa chỉ", "Ngày", "Trạng thái", "Thao tác"]}>
+              {orders.map((o) => (
+                <TableRow key={o._id}>
+                  <TableCell>#{orderIdShort(o._id)}</TableCell>
+                  <TableCell className="max-w-[200px] truncate">{o.address}</TableCell>
+                  <TableCell>{formatOrderDate(o.scheduledDate)}</TableCell>
+                  <TableCell>
+                    <OrderStatusBadge status={o.status as OrderStatus} />
+                  </TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="sm" onClick={() => setSelectedOrder(o._id)}>
+                      {t("common.view")}
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </DataTable>
+            {orders.length === 0 && (
+              <p className="text-[var(--color-text-muted)] mt-4">{t("common.noData")}</p>
+            )}
+          </div>
 
-        {detail && (
-          <Card>
-            <h3 className="font-semibold mb-4">Chi tiết #{detail._id.slice(-6)}</h3>
-            <div className="text-sm space-y-2 mb-4">
-              <p><strong>Địa chỉ:</strong> {detail.address}</p>
-              <p><strong>NV:</strong> {detail.cleanerName ?? "—"}</p>
-              <p><strong>Tasks:</strong> {detail.tasks.map((t) => t.taskName).join(", ")}</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {detail.status === "PENDING" && (
-                <Button size="sm" onClick={() => alert("Đã phân công")}>{t("admin.orders.assignCleaner")}</Button>
-              )}
-              <Button size="sm" variant="outline">{t("admin.orders.reassignCleaner")}</Button>
-              <Button size="sm" variant="danger">{t("admin.orders.cancelOrder")}</Button>
-            </div>
-          </Card>
-        )}
-      </div>
+          {detail && (
+            <Card>
+              <h3 className="font-semibold mb-4">Chi tiết #{orderIdShort(detail._id)}</h3>
+              <div className="text-sm space-y-2 mb-4">
+                <p>
+                  <strong>Địa chỉ:</strong> {detail.address}
+                </p>
+                <p>
+                  <strong>Trạng thái:</strong> {detail.status}
+                </p>
+                <p>
+                  <strong>Tasks:</strong> {detail.tasks?.map((task) => task.taskName).join(", ")}
+                </p>
+              </div>
+
+              <FormField label="Chọn nhân viên" className="mb-3">
+                <Select
+                  value={cleanerIdInput}
+                  onChange={(e) => setCleanerIdInput(e.target.value)}
+                >
+                  <option value="">— Chọn —</option>
+                  {cleaners
+                    .filter((c) => c.isActive)
+                    .map((c) => (
+                      <option key={c._id} value={c._id}>
+                        {c.fullName}
+                      </option>
+                    ))}
+                </Select>
+              </FormField>
+
+              <div className="flex flex-wrap gap-2">
+                {detail.status === "PENDING" && (
+                  <Button
+                    size="sm"
+                    disabled={!cleanerIdInput || assigning}
+                    onClick={() =>
+                      runAction(() =>
+                        assignCleaner({ orderId: detail._id, cleanerId: cleanerIdInput }),
+                      )
+                    }
+                  >
+                    {assigning ? t("common.loading") : t("admin.orders.assignCleaner")}
+                  </Button>
+                )}
+                {["ASSIGNED", "ACCEPTED"].includes(detail.status) && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={!cleanerIdInput || reassigning}
+                    onClick={() =>
+                      runAction(() =>
+                        reassignCleaner({ orderId: detail._id, cleanerId: cleanerIdInput }),
+                      )
+                    }
+                  >
+                    {reassigning ? t("common.loading") : t("admin.orders.reassignCleaner")}
+                  </Button>
+                )}
+                {detail.status !== "COMPLETED" && detail.status !== "CANCELLED" && (
+                  <Button
+                    size="sm"
+                    variant="danger"
+                    disabled={cancelling}
+                    onClick={() => {
+                      if (!confirm("Hủy đơn này?")) return;
+                      runAction(() => cancelOrder({ orderId: detail._id, reason: "Admin hủy" }));
+                    }}
+                  >
+                    {cancelling ? t("common.loading") : t("admin.orders.cancelOrder")}
+                  </Button>
+                )}
+              </div>
+            </Card>
+          )}
+        </div>
+      )}
     </div>
   );
 }

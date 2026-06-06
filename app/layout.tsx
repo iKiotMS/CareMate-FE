@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Providers } from "@/providers";
+// @ts-ignore: CSS side-effect import type declarations may be missing in this environment
 import "./globals.css";
 
 export const metadata: Metadata = {

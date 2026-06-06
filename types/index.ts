@@ -63,7 +63,7 @@ export interface Notification {
   _id: string;
   title: string;
   message: string;
-  type: "info" | "success" | "warning";
+  type: "info" | "success" | "warning" | "promo";
   read: boolean;
   createdAt: string;
 }
