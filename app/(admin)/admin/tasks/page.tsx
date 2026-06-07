@@ -25,6 +25,7 @@ function slugify(name: string) {
 export default function AdminTasksPage() {
   const [showAdd, setShowAdd] = useState(false);
   const [name, setName] = useState("");
+  const [price, setPrice] = useState(0);
   const [error, setError] = useState("");
 
   const { data: tasksRaw, isLoading, refetch } = useAdminTasks();
@@ -38,8 +39,9 @@ export default function AdminTasksPage() {
     if (!name.trim()) return;
     setError("");
     try {
-      await createTask({ name: name.trim(), slug: slugify(name) });
+      await createTask({ name: name.trim(), slug: slugify(name), price });
       setName("");
+      setPrice(0);
       setShowAdd(false);
       refetch();
     } catch (err) {
@@ -80,6 +82,16 @@ export default function AdminTasksPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Tên công việc mới"
+                required
+              />
+            </FormField>
+            <FormField label="Giá (VND)">
+              <Input
+                type="number"
+                min={0}
+                value={price}
+                onChange={(e) => setPrice(Number(e.target.value))}
+                placeholder="0"
                 required
               />
             </FormField>

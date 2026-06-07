@@ -14,11 +14,25 @@ import {
   useAdminAssignCleaner,
   useAdminReassignCleaner,
   useAdminCancelOrder,
+  useAdminConfirmDeposit,
+  useAdminConfirmFinalPayment,
 } from "@/hooks/useApi";
 import { formatOrderDate, orderIdShort } from "@/lib/format";
 import { getApiErrorMessage } from "@/lib/api-errors";
 import type { Order, OrderStatus, User } from "@/types";
 import { Loader2 } from "lucide-react";
+
+const STATUS_OPTIONS = [
+  "PENDING",
+  "ON_HOLD_PAYMENT",
+  "CONFIRMED",
+  "ACCEPTED",
+  "IN_PROGRESS",
+  "REVIEW_PENDING",
+  "PAYMENT_PENDING",
+  "COMPLETED",
+  "CANCELLED",
+];
 
 export default function AdminOrdersPage() {
   const [statusFilter, setStatusFilter] = useState("");
@@ -33,6 +47,8 @@ export default function AdminOrdersPage() {
   const { mutateAsync: assignCleaner, isPending: assigning } = useAdminAssignCleaner();
   const { mutateAsync: reassignCleaner, isPending: reassigning } = useAdminReassignCleaner();
   const { mutateAsync: cancelOrder, isPending: cancelling } = useAdminCancelOrder();
+  const { mutateAsync: confirmDeposit, isPending: confirmingDeposit } = useAdminConfirmDeposit();
+  const { mutateAsync: confirmFinalPayment, isPending: confirmingFinal } = useAdminConfirmFinalPayment();
 
   const orders = ((ordersData as { orders?: Order[] })?.orders ?? []) as Order[];
   const cleaners = ((cleanersData as { cleaners?: User[] })?.cleaners ?? []) as User[];
@@ -59,13 +75,9 @@ export default function AdminOrdersPage() {
       <FormField label={t("common.filter")} className="max-w-xs mb-4">
         <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           <option value="">{t("common.all")}</option>
-          {["PENDING", "ASSIGNED", "ACCEPTED", "IN_PROGRESS", "REVIEW_PENDING", "COMPLETED", "CANCELLED"].map(
-            (s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ),
-          )}
+          {STATUS_OPTIONS.map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
         </Select>
       </FormField>
 
@@ -99,18 +111,15 @@ export default function AdminOrdersPage() {
           </div>
 
           {detail && (
-            <Card>
+            <Card className="mt-6">
               <h3 className="font-semibold mb-4">Chi tiết #{orderIdShort(detail._id)}</h3>
               <div className="text-sm space-y-2 mb-4">
+                <p><strong>Địa chỉ:</strong> {detail.address}</p>
                 <p>
-                  <strong>Địa chỉ:</strong> {detail.address}
+                  <strong>Trạng thái:</strong>{" "}
+                  <OrderStatusBadge status={detail.status as OrderStatus} />
                 </p>
-                <p>
-                  <strong>Trạng thái:</strong> {detail.status}
-                </p>
-                <p>
-                  <strong>Tasks:</strong> {detail.tasks?.map((task) => task.taskName).join(", ")}
-                </p>
+                <p><strong>Tasks:</strong> {detail.tasks?.map((task) => task.taskName).join(", ")}</p>
               </div>
 
               <FormField label="Chọn nhân viên" className="mb-3">
@@ -130,6 +139,7 @@ export default function AdminOrdersPage() {
               </FormField>
 
               <div className="flex flex-wrap gap-2">
+                {/* Assign cleaner to a PENDING order */}
                 {detail.status === "PENDING" && (
                   <Button
                     size="sm"
@@ -143,7 +153,9 @@ export default function AdminOrdersPage() {
                     {assigning ? t("common.loading") : t("admin.orders.assignCleaner")}
                   </Button>
                 )}
-                {["ASSIGNED", "ACCEPTED"].includes(detail.status) && (
+
+                {/* Reassign cleaner when order is CONFIRMED or ACCEPTED */}
+                {["CONFIRMED", "ACCEPTED"].includes(detail.status) && (
                   <Button
                     size="sm"
                     variant="outline"
@@ -157,6 +169,38 @@ export default function AdminOrdersPage() {
                     {reassigning ? t("common.loading") : t("admin.orders.reassignCleaner")}
                   </Button>
                 )}
+
+                {/* Offline payment: confirm deposit received → CONFIRMED */}
+                {detail.status === "ON_HOLD_PAYMENT" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={confirmingDeposit}
+                    onClick={() => {
+                      if (!confirm("Xác nhận đã nhận đặt cọc offline cho đơn này?")) return;
+                      runAction(() => confirmDeposit(detail._id));
+                    }}
+                  >
+                    {confirmingDeposit ? t("common.loading") : "Xác nhận đặt cọc (offline)"}
+                  </Button>
+                )}
+
+                {/* Offline payment: confirm final payment received → COMPLETED */}
+                {detail.status === "PAYMENT_PENDING" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={confirmingFinal}
+                    onClick={() => {
+                      if (!confirm("Xác nhận đã nhận thanh toán cuối offline cho đơn này?")) return;
+                      runAction(() => confirmFinalPayment(detail._id));
+                    }}
+                  >
+                    {confirmingFinal ? t("common.loading") : "Xác nhận thanh toán cuối (offline)"}
+                  </Button>
+                )}
+
+                {/* Cancel — not allowed once order is COMPLETED or already CANCELLED */}
                 {detail.status !== "COMPLETED" && detail.status !== "CANCELLED" && (
                   <Button
                     size="sm"

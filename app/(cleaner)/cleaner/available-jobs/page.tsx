@@ -47,7 +47,6 @@ export default function AvailableJobsPage() {
       await apply(orderId);
       setSuccessId(orderId);
       await refetch();
-      setTimeout(() => router.push("/cleaner/jobs"), 800);
     } catch (err) {
       setError(
         getApiErrorMessage(
@@ -62,7 +61,7 @@ export default function AvailableJobsPage() {
     <div>
       <PageHeader
         title={t("cleaner.available.title")}
-        subtitle="Đơn PENDING từ khách hàng — nhấn «Ứng tuyển» để nhận việc (chuyển ASSIGNED)"
+        subtitle="Đơn PENDING từ khách hàng — nhấn «Ứng tuyển» để được khách chọn"
         action={
           <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
             <RefreshCw className={cn("w-4 h-4", isFetching && "animate-spin")} />
@@ -77,7 +76,7 @@ export default function AvailableJobsPage() {
       )}
       {successId && (
         <div className="mb-4 p-3 rounded-lg bg-green-50 text-green-700 text-sm border border-green-200">
-          Đã nhận đơn #{orderIdShort(successId)}! Đang chuyển tới việc được giao...
+          Ứng tuyển đơn #{orderIdShort(successId)} thành công! Chờ khách hàng chọn bạn.
         </div>
       )}
 
@@ -118,20 +117,24 @@ export default function AvailableJobsPage() {
                 {job.tasks?.map((tk) => tk.taskName).join(", ") || "—"}
               </p>
               {job.note && <p className="text-xs mt-2 italic text-[var(--color-text-muted)]">{job.note}</p>}
-              <Button
-                size="sm"
-                className="mt-4"
-                disabled={applying}
-                onClick={() => handleApply(job._id)}
-              >
-                {applying && applyingId === job._id ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin mr-1" /> Đang nhận...
-                  </>
-                ) : (
-                  t("common.apply")
-                )}
-              </Button>
+              {successId === job._id ? (
+                <p className="mt-4 text-sm text-green-700 font-medium">✓ Đã ứng tuyển — chờ khách chọn</p>
+              ) : (
+                <Button
+                  size="sm"
+                  className="mt-4"
+                  disabled={applying}
+                  onClick={() => handleApply(job._id)}
+                >
+                  {applying && applyingId === job._id ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-1" /> Đang ứng tuyển...
+                    </>
+                  ) : (
+                    "Ứng tuyển"
+                  )}
+                </Button>
+              )}
             </Card>
           ))}
         </div>

@@ -14,6 +14,7 @@ import type { Order, OrderStatus } from "@/types";
 import {
   CheckCircle2,
   Clock3,
+  CreditCard,
   Loader2,
   PackageCheck,
   PauseCircle,
@@ -24,10 +25,12 @@ import {
 const FILTERS = [
   { id: "ALL", label: t("common.all") },
   { id: "PENDING", label: t("status.pending") },
-  { id: "ASSIGNED", label: t("status.assigned") },
+  { id: "ON_HOLD_PAYMENT", label: t("status.onHoldPayment") },
+  { id: "CONFIRMED", label: t("status.confirmed") },
   { id: "ACCEPTED", label: t("status.accepted") },
   { id: "IN_PROGRESS", label: t("status.inProgress") },
   { id: "REVIEW_PENDING", label: t("status.reviewPending") },
+  { id: "PAYMENT_PENDING", label: t("status.paymentPending") },
   { id: "COMPLETED", label: t("status.completed") },
   { id: "CANCELLED", label: t("status.cancelled") },
 ];
@@ -40,10 +43,12 @@ const STAT_ITEMS: Array<{
   icon: typeof Clock3;
 }> = [
   { status: "PENDING", label: t("status.pending"), icon: Clock3 },
-  { status: "ASSIGNED", label: t("status.assigned"), icon: PackageCheck },
+  { status: "ON_HOLD_PAYMENT", label: t("status.onHoldPayment"), icon: CreditCard },
+  { status: "CONFIRMED", label: t("status.confirmed"), icon: PackageCheck },
   { status: "ACCEPTED", label: t("status.accepted"), icon: CheckCircle2 },
   { status: "IN_PROGRESS", label: t("status.inProgress"), icon: Timer },
   { status: "REVIEW_PENDING", label: t("status.reviewPending"), icon: PauseCircle },
+  { status: "PAYMENT_PENDING", label: t("status.paymentPending"), icon: CreditCard },
   { status: "COMPLETED", label: t("status.completed"), icon: CheckCircle2 },
   { status: "CANCELLED", label: t("status.cancelled"), icon: XCircle },
 ];

@@ -41,15 +41,23 @@ export const MOCK_USERS: Record<string, User> = {
 };
 
 export const MOCK_TASKS: TaskCatalogItem[] = [
-  { _id: "t1", name: "Quét sàn", slug: "sweep", description: "Quét sạch toàn bộ sàn nhà", isActive: true, sortOrder: 1 },
-  { _id: "t2", name: "Lau sàn", slug: "mop", description: "Lau sàn bằng nước lau sàn chuyên dụng", isActive: true, sortOrder: 2 },
-  { _id: "t3", name: "Hút bụi", slug: "vacuum", description: "Hút bụi thảm, sofa và góc khuất", isActive: true, sortOrder: 3 },
-  { _id: "t4", name: "Lau nội thất", slug: "wipe_furniture", description: "Lau bụi bàn ghế, tủ kệ", isActive: true, sortOrder: 4 },
-  { _id: "t5", name: "Lau kính", slug: "wipe_glass", description: "Lau cửa kính, gương", isActive: true, sortOrder: 5 },
-  { _id: "t6", name: "Dọn nhà vệ sinh", slug: "clean_toilet", description: "Vệ sinh toilet, lavabo", isActive: true, sortOrder: 6 },
-  { _id: "t7", name: "Đổ rác", slug: "take_out_trash", description: "Gom và đổ rác", isActive: true, sortOrder: 7 },
-  { _id: "t8", name: "Rửa bát", slug: "wash_dishes", description: "Rửa bát đĩa sau bữa ăn", isActive: true, sortOrder: 8 },
+  { _id: "t1", name: "Quét sàn", slug: "sweep", description: "Quét sạch toàn bộ sàn nhà", price: 50000, isActive: true, sortOrder: 1 },
+  { _id: "t2", name: "Lau sàn", slug: "mop", description: "Lau sàn bằng nước lau sàn chuyên dụng", price: 60000, isActive: true, sortOrder: 2 },
+  { _id: "t3", name: "Hút bụi", slug: "vacuum", description: "Hút bụi thảm, sofa và góc khuất", price: 70000, isActive: true, sortOrder: 3 },
+  { _id: "t4", name: "Lau nội thất", slug: "wipe_furniture", description: "Lau bụi bàn ghế, tủ kệ", price: 80000, isActive: true, sortOrder: 4 },
+  { _id: "t5", name: "Lau kính", slug: "wipe_glass", description: "Lau cửa kính, gương", price: 55000, isActive: true, sortOrder: 5 },
+  { _id: "t6", name: "Dọn nhà vệ sinh", slug: "clean_toilet", description: "Vệ sinh toilet, lavabo", price: 90000, isActive: true, sortOrder: 6 },
+  { _id: "t7", name: "Đổ rác", slug: "take_out_trash", description: "Gom và đổ rác", price: 30000, isActive: true, sortOrder: 7 },
+  { _id: "t8", name: "Rửa bát", slug: "wash_dishes", description: "Rửa bát đĩa sau bữa ăn", price: 45000, isActive: true, sortOrder: 8 },
 ];
+
+const defaultOrderFields = {
+  totalAmount: 0,
+  currency: "VND",
+  paymentMethod: "CASH" as const,
+  paymentStatus: "UNPAID" as const,
+  paidAt: null,
+};
 
 export const MOCK_ORDERS: Order[] = [
   {
@@ -64,12 +72,14 @@ export const MOCK_ORDERS: Order[] = [
     address: "123 Nguyễn Huệ, Quận 1, TP.HCM",
     note: "Có nuôi mèo, vui lòng đóng cửa phòng ngủ",
     tasks: [
-      { taskCatalogId: "t1", taskName: "Quét sàn", isDone: true, photoBefore: "/placeholder-before.jpg", photoAfter: "/placeholder-after.jpg" },
-      { taskCatalogId: "t6", taskName: "Dọn nhà vệ sinh", isDone: false },
+      { taskCatalogId: "t1", taskName: "Quét sàn", taskPrice: 50000, isDone: true, photoBefore: "/placeholder-before.jpg", photoAfter: "/placeholder-after.jpg" },
+      { taskCatalogId: "t6", taskName: "Dọn nhà vệ sinh", taskPrice: 90000, isDone: false },
     ],
     photosBeforeBooking: ["/placeholder-room.jpg"],
     photosCheckin: ["/placeholder-checkin.jpg"],
     createdAt: "2026-05-28T08:00:00Z",
+    ...defaultOrderFields,
+    totalAmount: 140000,
   },
   {
     _id: "ord002",
@@ -82,11 +92,13 @@ export const MOCK_ORDERS: Order[] = [
     scheduledTime: "13:00 - 15:00",
     address: "456 Lê Lợi, Quận 3, TP.HCM",
     tasks: [
-      { taskCatalogId: "t2", taskName: "Lau sàn", isDone: false },
-      { taskCatalogId: "t3", taskName: "Hút bụi", isDone: false },
+      { taskCatalogId: "t2", taskName: "Lau sàn", taskPrice: 60000, isDone: false },
+      { taskCatalogId: "t3", taskName: "Hút bụi", taskPrice: 70000, isDone: false },
     ],
     photosBeforeBooking: [],
     createdAt: "2026-05-30T10:00:00Z",
+    ...defaultOrderFields,
+    totalAmount: 130000,
   },
   {
     _id: "ord003",
@@ -99,12 +111,14 @@ export const MOCK_ORDERS: Order[] = [
     scheduledTime: "09:00 - 11:00",
     address: "789 Hai Bà Trưng, Quận 1, TP.HCM",
     tasks: [
-      { taskCatalogId: "t4", taskName: "Lau nội thất", isDone: true, photoBefore: "/p1.jpg", photoAfter: "/p2.jpg" },
+      { taskCatalogId: "t4", taskName: "Lau nội thất", taskPrice: 80000, isDone: true, photoBefore: "/p1.jpg", photoAfter: "/p2.jpg" },
     ],
     photosBeforeBooking: ["/p3.jpg"],
     photosCheckin: ["/p4.jpg"],
     photosAfter: ["/p5.jpg"],
     createdAt: "2026-05-20T08:00:00Z",
+    ...defaultOrderFields,
+    totalAmount: 80000,
   },
   {
     _id: "ord004",
@@ -116,10 +130,14 @@ export const MOCK_ORDERS: Order[] = [
     scheduledDate: "2026-05-15",
     scheduledTime: "15:00 - 17:00",
     address: "321 Pasteur, Quận 3, TP.HCM",
-    tasks: [{ taskCatalogId: "t1", taskName: "Quét sàn", isDone: true }],
+    tasks: [{ taskCatalogId: "t1", taskName: "Quét sàn", taskPrice: 50000, isDone: true }],
     rating: 5,
     review: "Rất hài lòng, dọn sạch và đúng giờ!",
     createdAt: "2026-05-10T08:00:00Z",
+    ...defaultOrderFields,
+    paymentStatus: "PAID",
+    paidAt: "2026-05-15T12:00:00Z",
+    totalAmount: 50000,
   },
   {
     _id: "ord005",
@@ -132,10 +150,12 @@ export const MOCK_ORDERS: Order[] = [
     scheduledTime: "07:00 - 09:00",
     address: "55 Võ Văn Tần, Quận 3, TP.HCM",
     tasks: [
-      { taskCatalogId: "t5", taskName: "Lau kính", isDone: false },
-      { taskCatalogId: "t7", taskName: "Đổ rác", isDone: false },
+      { taskCatalogId: "t5", taskName: "Lau kính", taskPrice: 55000, isDone: false },
+      { taskCatalogId: "t7", taskName: "Đổ rác", taskPrice: 30000, isDone: false },
     ],
     createdAt: "2026-05-31T09:00:00Z",
+    ...defaultOrderFields,
+    totalAmount: 85000,
   },
   {
     _id: "ord006",
@@ -147,9 +167,11 @@ export const MOCK_ORDERS: Order[] = [
     scheduledDate: "2026-06-04",
     scheduledTime: "11:00 - 13:00",
     address: "12 Trần Hưng Đạo, Quận 5, TP.HCM",
-    tasks: [{ taskCatalogId: "t8", taskName: "Rửa bát", isDone: false }],
+    tasks: [{ taskCatalogId: "t8", taskName: "Rửa bát", taskPrice: 45000, isDone: false }],
     note: "Nhà bếp cần dọn kỹ",
     createdAt: "2026-05-29T14:00:00Z",
+    ...defaultOrderFields,
+    totalAmount: 45000,
   },
 ];
 
@@ -175,22 +197,21 @@ export const MOCK_REVIEWS: Review[] = [
 
 export const MOCK_NOTIFICATIONS: Record<string, Notification[]> = {
   customer: [
-    { _id: "n1", title: "Hoàn thành dịch vụ", message: "Vệ sinh tổng quát cho căn hộ A-1204 đã hoàn thành xuất sắc. Cảm ơn quý khách đã sử dụng CleanFlow!", type: "success", read: false, createdAt: "2026-06-02T11:00:00Z" },
-    { _id: "n2", title: "Bắt đầu dọn dẹp", message: "Nhân viên của chúng tôi đã bắt đầu công việc tại địa chỉ của bạn. Bạn có thể theo dõi tiến độ thực hiệp.", type: "info", read: false, createdAt: "2026-06-02T09:05:00Z" },
-    { _id: "n3", title: "Đã phân công nhân viên", message: "Chuyên gia Lê Thị Thanh đã được điều phối để yêu cầu dặt lịch của bạn.", type: "info", read: false, createdAt: "2026-05-28T09:00:00Z" },
-    { _id: "n4", title: "Ưu đãi cuối tuần: Giảm 20%", message: "Chi duy nhất cuối tuần này, nhận ngay ưu đãi 20% cho dịch vụ vệ sinh máy lạnh. Nhập mã: CLEAN20.", type: "promo", read: false, createdAt: "2026-06-01T18:30:00Z" },
-    { _id: "n5", title: "Cập nhật ứng dụng", message: "CleanFlow v2.4.0 sắn sàng với lịnh năng theo dõi vị trí bản đồ.", type: "warning", read: true, createdAt: "2026-05-20T15:00:00Z" },
+    { _id: "n1", recipientId: "u001", type: "ORDER_COMPLETED", title: "Hoàn thành dịch vụ", body: "Vệ sinh tổng quát cho căn hộ A-1204 đã hoàn thành xuất sắc.", isRead: false, referenceId: "ord001", referenceType: "order", createdAt: "2026-06-02T11:00:00Z" },
+    { _id: "n2", recipientId: "u001", type: "CLEANER_CHECKED_IN", title: "Bắt đầu dọn dẹp", body: "Nhân viên đã bắt đầu công việc tại địa chỉ của bạn.", isRead: false, referenceId: "ord001", referenceType: "order", createdAt: "2026-06-02T09:05:00Z" },
+    { _id: "n3", recipientId: "u001", type: "CLEANER_ASSIGNED", title: "Đã phân công nhân viên", body: "Chuyên gia Lê Thị Thanh đã được điều phối cho đơn của bạn.", isRead: false, referenceId: "ord002", referenceType: "order", createdAt: "2026-05-28T09:00:00Z" },
+    { _id: "n5", recipientId: "u001", type: "ORDER_CANCELLED", title: "Cập nhật đơn hàng", body: "Đơn hàng của bạn đã có thay đổi.", isRead: true, referenceId: null, referenceType: null, createdAt: "2026-05-20T15:00:00Z" },
   ],
   cleaner: [
-    { _id: "cn1", title: "Việc mới khả dụng", message: "Có đơn PENDING tại Quận 3 — 05/06", type: "info", read: false, createdAt: "2026-05-30T10:00:00Z" },
-    { _id: "cn2", title: "Đánh giá mới", message: "Khách hàng đánh giá 5 sao cho đơn #ord004", type: "success", read: true, createdAt: "2026-05-16T10:30:00Z" },
+    { _id: "cn1", recipientId: "u002", type: "NEW_JOB_AVAILABLE", title: "Việc mới khả dụng", body: "Có đơn PENDING tại Quận 3 — 05/06", isRead: false, referenceId: "ord005", referenceType: "order", createdAt: "2026-05-30T10:00:00Z" },
+    { _id: "cn2", recipientId: "u002", type: "NEW_REVIEW_RECEIVED", title: "Đánh giá mới", body: "Khách hàng đánh giá 5 sao cho đơn #ord004", isRead: true, referenceId: "ord004", referenceType: "order", createdAt: "2026-05-16T10:30:00Z" },
   ],
 };
 
 export const MOCK_COMPLAINTS: Complaint[] = [
-  { _id: "cp1", type: "customer", subject: "Dọn chưa sạch góc bếp", description: "Khách phàn nàn góc bếp còn dầu mỡ", status: "investigating", createdAt: "2026-05-21T08:00:00Z" },
-  { _id: "cp2", type: "cleaner", subject: "Khách không có mặt", description: "NV đến đúng giờ nhưng không vào được nhà", status: "open", createdAt: "2026-05-23T14:00:00Z" },
-  { _id: "cp3", type: "customer", subject: "Trễ giờ 30 phút", description: "NV đến muộn không báo trước", status: "resolved", createdAt: "2026-05-18T09:00:00Z" },
+  { _id: "cp1", orderId: "ord001", orderShortId: "ORD001", customerId: "u001", customerName: "Nguyễn Minh An", subject: "Dọn chưa sạch góc bếp", description: "Khách phàn nàn góc bếp còn dầu mỡ", evidenceUrls: [], status: "PROCESSING", category: "SERVICE_QUALITY", replies: [], createdAt: "2026-05-21T08:00:00Z", updatedAt: "2026-05-21T08:00:00Z" },
+  { _id: "cp2", orderId: "ord005", orderShortId: "ORD005", customerId: "c002", customerName: "Phạm Thu Hà", subject: "Khách không có mặt", description: "NV đến đúng giờ nhưng không vào được nhà", evidenceUrls: [], status: "OPEN", category: null, replies: [], createdAt: "2026-05-23T14:00:00Z", updatedAt: "2026-05-23T14:00:00Z" },
+  { _id: "cp3", orderId: "ord004", orderShortId: "ORD004", customerId: "u001", customerName: "Nguyễn Minh An", subject: "Trễ giờ 30 phút", description: "NV đến muộn không báo trước", evidenceUrls: [], status: "RESOLVED", category: "LATE_ARRIVAL", replies: [], createdAt: "2026-05-18T09:00:00Z", updatedAt: "2026-05-19T10:00:00Z" },
 ];
 
 export const MOCK_EARNINGS: EarningsSummary = {

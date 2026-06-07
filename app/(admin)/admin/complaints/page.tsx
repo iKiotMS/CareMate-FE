@@ -1,42 +1,78 @@
 "use client";
 
+import { useState } from "react";
+import { useAdminComplaints } from "@/hooks/useApi";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { Card } from "@/components/ui/Card";
+import { FilterTabs } from "@/components/shared/EmptyState";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { ErrorState } from "@/components/shared/ErrorState";
+import { SkeletonTable } from "@/components/ui/Skeleton";
 import { Badge } from "@/components/ui/Badge";
-import { t } from "@/lib/i18n";
-import { MOCK_COMPLAINTS } from "@/data/mock";
+import { COMPLAINT_STATUS_VARIANT } from "@/lib/constants";
 import type { Complaint } from "@/types";
+import { formatDistanceToNow } from "date-fns";
 
-const statusVariant: Record<Complaint["status"], "warning" | "info" | "success"> = {
-  open: "warning",
-  investigating: "info",
-  resolved: "success",
-};
-const statusLabel: Record<Complaint["status"], string> = {
-  open: t("admin.complaints.open"),
-  investigating: t("admin.complaints.investigating"),
-  resolved: t("admin.complaints.resolved"),
-};
+const STATUS_TABS = [
+  { id: "", label: "All" },
+  { id: "OPEN", label: "Open" },
+  { id: "PROCESSING", label: "Processing" },
+  { id: "RESOLVED", label: "Resolved" },
+  { id: "REJECTED", label: "Rejected" },
+];
 
 export default function AdminComplaintsPage() {
+  const [status, setStatus] = useState("");
+  const { data, isLoading, isError, refetch } = useAdminComplaints({
+    status: status || undefined,
+  });
+
+  const complaints: Complaint[] = data?.data ?? [];
+
+  if (isLoading) return <SkeletonTable rows={8} />;
+  if (isError) return <ErrorState onRetry={refetch} />;
+
   return (
-    <div>
-      <PageHeader title={t("admin.complaints.title")} />
-      <div className="space-y-3">
-        {MOCK_COMPLAINTS.map((c) => (
-          <Card key={c._id}>
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-              <Badge variant={c.type === "customer" ? "info" : "purple"}>
-                {c.type === "customer" ? t("admin.complaints.customerComplaint") : t("admin.complaints.cleanerComplaint")}
-              </Badge>
-              <Badge variant={statusVariant[c.status]}>{statusLabel[c.status]}</Badge>
-            </div>
-            <p className="font-medium">{c.subject}</p>
-            <p className="text-sm text-[var(--color-text-secondary)] mt-1">{c.description}</p>
-            <p className="text-xs text-[var(--color-text-muted)] mt-2">{new Date(c.createdAt).toLocaleDateString("vi-VN")}</p>
-          </Card>
-        ))}
-      </div>
+    <div className="p-6 space-y-4">
+      <PageHeader title="Complaints" subtitle={`${data?.total ?? 0} total`} />
+
+      <FilterTabs tabs={STATUS_TABS} active={status} onChange={setStatus} />
+
+      {complaints.length === 0 ? (
+        <EmptyState title="No complaints found" />
+      ) : (
+        <div className="rounded-xl border border-[var(--color-border)] overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-[var(--color-bg-muted)] text-[var(--color-text-secondary)]">
+              <tr>
+                <th className="px-4 py-3 text-left font-medium">Customer</th>
+                <th className="px-4 py-3 text-left font-medium">Subject</th>
+                <th className="px-4 py-3 text-left font-medium">Status</th>
+                <th className="px-4 py-3 text-left font-medium">Filed</th>
+                <th className="px-4 py-3 text-left font-medium">Replies</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--color-border)]">
+              {complaints.map((c) => (
+                <tr key={c._id} className="hover:bg-[var(--color-surface-hover)]">
+                  <td className="px-4 py-3 text-[var(--color-text)]">{c.customerName}</td>
+                  <td className="px-4 py-3 text-[var(--color-text)] max-w-xs truncate">{c.subject}</td>
+                  <td className="px-4 py-3">
+                    <Badge variant={COMPLAINT_STATUS_VARIANT[c.status] as any}>
+                      {c.status}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3 text-[var(--color-text-muted)]">
+                    {formatDistanceToNow(new Date(c.createdAt), { addSuffix: true })}
+                  </td>
+                  <td className="px-4 py-3 text-[var(--color-text-muted)]">
+                    {c.replies.length}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

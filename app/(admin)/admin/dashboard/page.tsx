@@ -5,12 +5,19 @@ import { StatCard } from "@/components/shared/StatCard";
 import { Card } from "@/components/ui/Card";
 import { t } from "@/lib/i18n";
 import { useAdminDashboardStats, useAdminCleaners } from "@/hooks/useApi";
-import { ClipboardList, Users, CheckCircle, UserCircle, Loader2 } from "lucide-react";
+import {
+  ClipboardList,
+  Users,
+  CheckCircle,
+  UserCircle,
+  Loader2,
+} from "lucide-react";
 import type { User } from "@/types";
 
 const STATUS_LABELS = [
   "PENDING",
-  "ASSIGNED",
+  "ON_HOLD_PAYMENT",
+  "CONFIRMED",
   "ACCEPTED",
   "IN_PROGRESS",
   "REVIEW_PENDING",
@@ -31,24 +38,33 @@ export default function AdminDashboardPage() {
   }
 
   const s = stats as Record<string, number> | undefined;
-  const totalOrders = s?.total ?? 0;
-  const completedOrders = s?.COMPLETED ?? 0;
+  const totalOrders = s?.totalOrders ?? 0;
+  const completedOrders = s?.totalCompleted ?? 0;
   const activeCleaners = s?.totalCleaners ?? 0;
   const totalCustomers = s?.totalCustomers ?? 0;
 
-  const cleaners = ((cleanersData as { cleaners?: User[] })?.cleaners ?? []) as User[];
+  const cleaners = ((cleanersData as { cleaners?: User[] })?.cleaners ??
+    []) as User[];
   const topCleaners = [...cleaners].slice(0, 3);
+
+  const statusMap = Object.fromEntries(
+    (stats?.ordersByStatus ?? []).map((item: any) => [item.status, item.count]),
+  );
 
   const ordersByStatus = STATUS_LABELS.map((status) => ({
     status,
-    count: s?.[status] ?? 0,
+    count: statusMap[status] ?? 0,
   })).filter((item) => item.count > 0);
 
   return (
     <div>
       <PageHeader title={t("admin.dashboard.title")} />
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard title={t("admin.dashboard.totalOrders")} value={totalOrders} icon={ClipboardList} />
+        <StatCard
+          title={t("admin.dashboard.totalOrders")}
+          value={totalOrders}
+          icon={ClipboardList}
+        />
         <StatCard
           title={t("admin.dashboard.completedOrders")}
           value={completedOrders}
@@ -61,15 +77,24 @@ export default function AdminDashboardPage() {
           icon={Users}
           accent="info"
         />
-        <StatCard title="Khách hàng" value={totalCustomers} icon={UserCircle} accent="primary" />
+        <StatCard
+          title="Khách hàng"
+          value={totalCustomers}
+          icon={UserCircle}
+          accent="primary"
+        />
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
         <Card>
-          <h2 className="font-semibold mb-4">{t("admin.dashboard.ordersByStatus")}</h2>
+          <h2 className="font-semibold mb-4">
+            {t("admin.dashboard.ordersByStatus")}
+          </h2>
           <div className="space-y-2">
             {ordersByStatus.length === 0 ? (
-              <p className="text-sm text-[var(--color-text-muted)]">{t("common.noData")}</p>
+              <p className="text-sm text-[var(--color-text-muted)]">
+                {t("common.noData")}
+              </p>
             ) : (
               ordersByStatus.map((item) => (
                 <div key={item.status} className="flex justify-between text-sm">
@@ -81,9 +106,13 @@ export default function AdminDashboardPage() {
           </div>
         </Card>
         <Card>
-          <h2 className="font-semibold mb-4">{t("admin.dashboard.topCleaners")}</h2>
+          <h2 className="font-semibold mb-4">
+            {t("admin.dashboard.topCleaners")}
+          </h2>
           {topCleaners.length === 0 ? (
-            <p className="text-sm text-[var(--color-text-muted)]">{t("common.noData")}</p>
+            <p className="text-sm text-[var(--color-text-muted)]">
+              {t("common.noData")}
+            </p>
           ) : (
             topCleaners.map((c, i) => (
               <div
@@ -93,7 +122,9 @@ export default function AdminDashboardPage() {
                 <span>
                   {i + 1}. {c.fullName}
                 </span>
-                <span className="text-[var(--color-text-muted)] text-sm">{c.email}</span>
+                <span className="text-[var(--color-text-muted)] text-sm">
+                  {c.email}
+                </span>
               </div>
             ))
           )}

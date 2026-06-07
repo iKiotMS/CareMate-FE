@@ -8,20 +8,21 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea, Select, FormField } from "@/components/ui/Input";
 import { t } from "@/lib/i18n";
-import { TIME_SLOTS, PAYMENT_METHODS } from "@/lib/constants";
+import { TIME_SLOTS } from "@/lib/constants";
 import {
   useCreateOrder,
   useTaskCatalog,
   useUploadPhotos,
 } from "@/hooks/useApi";
 import { getApiErrorMessage } from "@/lib/api-errors";
-import { Check, Upload, CreditCard, Loader2 } from "lucide-react";
+import { Check, Upload, Loader2 } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 interface TaskItem {
   _id: string;
   name: string;
   description?: string;
+  price: number;
   isActive: boolean;
 }
 
@@ -39,7 +40,6 @@ export default function BookCleaningPage() {
     address: "",
     note: "",
     taskIds: [] as string[],
-    payment: "",
   });
 
   const { data: tasksRaw, isLoading: tasksLoading } = useTaskCatalog(true);
@@ -57,7 +57,6 @@ export default function BookCleaningPage() {
     { id: 2, label: t("customer.book.step2") },
     { id: 3, label: t("customer.book.step3") },
     { id: 4, label: t("customer.book.step4") },
-    { id: 5, label: t("customer.book.step5") },
   ];
 
   const toggleTask = (id: string) => {
@@ -119,6 +118,7 @@ export default function BookCleaningPage() {
         note: form.note.trim() || undefined,
         taskIds: form.taskIds,
         photosBeforeBooking: urls.length > 0 ? urls : undefined,
+        paymentMethod: "BANK_TRANSFER",
       });
       router.push("/customer/orders");
     } catch (err) {
@@ -227,14 +227,42 @@ export default function BookCleaningPage() {
                               </p>
                             )}
                           </div>
-                          {selected && (
-                            <Check className="w-5 h-5 text-[var(--color-primary)] shrink-0" />
-                          )}
+                          <div className="flex flex-col items-end gap-1 shrink-0">
+                            {task.price > 0 && (
+                              <span className="text-xs font-medium text-[var(--color-text-secondary)]">
+                                {task.price} ₫
+                              </span>
+                            )}
+                            {selected && (
+                              <Check className="w-5 h-5 text-[var(--color-primary)]" />
+                            )}
+                          </div>
                         </div>
                       </button>
                     );
                   })}
                 </div>
+
+                {selectedTasks.length > 0 && (
+                  <div className="mt-4 rounded-lg bg-[var(--color-primary)]/5 px-4 py-3 border border-[var(--color-primary)]/20 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-[var(--color-text)]">
+                        Tổng tiền
+                      </span>
+                      <span className="text-lg font-bold text-[var(--color-primary)]">
+                        {150000} ₫
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-[var(--color-text-muted)]">
+                      <span>Đặt cọc</span>
+                      <span>30.000 ₫</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-[var(--color-text-muted)]">
+                      <span>Còn lại sau khi hoàn thành dịch vụ</span>
+                      <span>{Math.max(0, 150000 - 30000).toLocaleString("vi-VN")} ₫</span>
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -338,56 +366,20 @@ export default function BookCleaningPage() {
                 ))}
               </ul>
             </div>
+            <div className="mt-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 text-sm text-blue-800 dark:text-blue-300">
+              Sau khi đặt đơn, bạn sẽ chọn nhân viên và thanh toán đặt cọc{" "}
+              <strong>30.000 ₫</strong> qua QR chuyển khoản.
+            </div>
             <Button
-              variant="secondary"
               onClick={submitOrder}
               disabled={busy}
-              className="w-full"
+              className="w-full mt-4"
             >
               {busy ? (
                 <Loader2 className="w-4 h-4 animate-spin inline mr-2" />
               ) : null}
-              {t("customer.book.placeOrder")} (bỏ qua thanh toán)
+              {t("customer.book.placeOrder")}
             </Button>
-          </div>
-        )}
-
-        {step === 5 && (
-          <div>
-            <p className="text-sm text-[var(--color-text-muted)] mb-4 flex items-center gap-2">
-              <CreditCard className="w-4 h-4" />
-              {t("customer.book.paymentNote")}
-            </p>
-            <div className="space-y-3">
-              {PAYMENT_METHODS.map((p) => (
-                <label
-                  key={p.id}
-                  className={cn(
-                    "flex items-center gap-3 p-4 rounded-[var(--radius-lg)] border-2 cursor-pointer",
-                    form.payment === p.id
-                      ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)]"
-                      : "border-[var(--color-border)]",
-                  )}
-                >
-                  <input
-                    type="radio"
-                    name="payment"
-                    checked={form.payment === p.id}
-                    onChange={() => setForm({ ...form, payment: p.id })}
-                    className="sr-only"
-                  />
-                  <div>
-                    <p className="font-medium">{p.name}</p>
-                    <p className="text-xs text-[var(--color-text-muted)]">
-                      {p.description}
-                    </p>
-                  </div>
-                  <span className="ml-auto text-xs px-2 py-0.5 rounded-full bg-[var(--color-warning-soft)] text-[var(--color-warning)]">
-                    {t("common.comingSoon")}
-                  </span>
-                </label>
-              ))}
-            </div>
           </div>
         )}
 
@@ -399,19 +391,14 @@ export default function BookCleaningPage() {
           >
             {t("common.previous")}
           </Button>
-          {step < 5 ? (
+          {step < 4 ? (
             <Button
               onClick={() => setStep((s) => s + 1)}
               disabled={!canNext() || busy}
             >
               {t("common.next")}
             </Button>
-          ) : (
-            <Button onClick={submitOrder} disabled={busy}>
-              {busy && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-              {t("customer.book.placeOrder")}
-            </Button>
-          )}
+          ) : null}
         </div>
       </Card>
     </div>

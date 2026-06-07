@@ -14,6 +14,7 @@ export const customerNav: NavItem[] = [
   { href: "/customer/book", labelKey: "nav.customer.book", icon: "Sparkles" },
   { href: "/customer/orders", labelKey: "nav.customer.orders", icon: "ClipboardList" },
   { href: "/customer/reviews", labelKey: "nav.customer.reviews", icon: "Star" },
+  { href: "/customer/complaints", labelKey: "nav.customer.complaints", icon: "MessageSquare" },
   { href: "/customer/notifications", labelKey: "nav.customer.notifications", icon: "Bell" },
   { href: "/customer/profile", labelKey: "nav.customer.profile", icon: "User" },
 ];
