@@ -250,7 +250,7 @@ export default function BookCleaningPage() {
                         Tổng tiền
                       </span>
                       <span className="text-lg font-bold text-[var(--color-primary)]">
-                        {selectedTasks.reduce((s, t) => s + t.price, 0).toLocaleString("vi-VN")} ₫
+                        {150000} ₫
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-xs text-[var(--color-text-muted)]">
@@ -258,8 +258,8 @@ export default function BookCleaningPage() {
                       <span>30.000 ₫</span>
                     </div>
                     <div className="flex items-center justify-between text-xs text-[var(--color-text-muted)]">
-                      <span>Còn lại sau dịch vụ</span>
-                      <span>{Math.max(0, selectedTasks.reduce((s, t) => s + t.price, 0) - 30000).toLocaleString("vi-VN")} ₫</span>
+                      <span>Còn lại sau khi hoàn thành dịch vụ</span>
+                      <span>{Math.max(0, 150000 - 30000).toLocaleString("vi-VN")} ₫</span>
                     </div>
                   </div>
                 )}
