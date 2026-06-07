@@ -34,13 +34,12 @@ export default function RegisterPage() {
     try {
       const payload = {
         fullName: form.fullName,
-        email: form.email,
+        phone: form.phone,
         password: form.password,
-        phone: form.phone || undefined,
       };
 
       await register(payload);
-      const response = await login({ email: form.email, password: form.password });
+      const response = await login({ phone: form.phone, password: form.password });
       const { user, accessToken, refreshToken } = response.data as {
         user: User;
         accessToken: string;
@@ -68,21 +67,13 @@ export default function RegisterPage() {
             disabled={isLoading}
           />
         </FormField>
-        <FormField label={t("auth.email")}>
-          <Input
-            type="email"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-            placeholder={t("auth.emailPlaceholder")}
-            required
-            disabled={isLoading}
-          />
-        </FormField>
         <FormField label={t("auth.phone")}>
           <Input
+            type="tel"
             value={form.phone}
             onChange={(e) => setForm({ ...form, phone: e.target.value })}
             placeholder={t("auth.phoneNumberPlaceholder")}
+            required
             disabled={isLoading}
           />
         </FormField>

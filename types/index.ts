@@ -13,10 +13,10 @@ export type OrderStatus =
 
 export interface User {
   _id: string;
-  email: string;
+  email?: string;
   fullName: string;
   role: UserRole;
-  phone?: string;
+  phone: string;
   avatarUrl?: string | null;
   isActive: boolean;
   rating?: number;
@@ -75,6 +75,7 @@ export interface Order {
   _id: string;
   customerId: string;
   customerName?: string;
+  customerPhone?: string | null;
   cleanerId?: string | null;
   cleanerName?: string | null;
   pendingCleanerId?: string | null;

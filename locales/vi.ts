@@ -153,7 +153,7 @@ export const vi = {
     forgotPassword: "Quên mật khẩu?",
     noAccount: "Chưa có tài khoản?",
     hasAccount: "Đã có tài khoản?",
-    hint: "Nhập email và mật khẩu của bạn để đăng nhập",
+    hint: "Nhập số điện thoại và mật khẩu của bạn để đăng nhập",
     fullNamePlaceholder: "Nguyễn Văn A",
     emailPlaceholder: "nguyenvana@gmail.com",
     passwordPlaceholder: "********",

@@ -16,19 +16,19 @@ export default function LoginPage() {
   const router = useRouter();
   const { login, isLoading } = useAuthApi();
   const setAuthSession = useAuthStore((state) => state.login);
-  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
   const getErrorMessage = (err: any) =>
-    err?.response?.data?.message || "Email hoặc mật khẩu không đúng. Vui lòng thử lại.";
+    err?.response?.data?.message || "Số điện thoại hoặc mật khẩu không đúng. Vui lòng thử lại.";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
     try {
-      const response = await login({ email, password });
+      const response = await login({ phone, password });
       const { user: rawUser, accessToken, refreshToken } = response.data as {
         user: Record<string, unknown>;
         accessToken: string;
@@ -53,12 +53,12 @@ export default function LoginPage() {
       <p className="text-sm text-[var(--color-text-muted)] mb-6">{t("auth.hint")}</p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <FormField label={t("auth.email")}>
+        <FormField label={t("auth.phone")}>
           <Input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder={t("auth.emailPlaceholder")}
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder={t("auth.phoneNumberPlaceholder")}
             required
             disabled={isLoading}
           />

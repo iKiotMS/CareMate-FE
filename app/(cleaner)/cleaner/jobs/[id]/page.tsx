@@ -158,6 +158,22 @@ export default function CleanerJobDetailPage({ params }: { params: { id: string 
           {formatOrderDate(order.scheduledDate)} · {order.scheduledTime}
         </p>
       </div>
+      {order.customerPhone && (
+        <div>
+          <span className="text-sm text-[var(--color-text-muted)]">Liên hệ khách hàng</span>
+          <p className="font-medium">
+            <a
+              href={`tel:${order.customerPhone}`}
+              className="text-[var(--color-primary)] hover:underline"
+            >
+              {order.customerPhone}
+            </a>
+            {order.customerName && (
+              <span className="text-[var(--color-text-muted)] ml-2 text-sm">({order.customerName})</span>
+            )}
+          </p>
+        </div>
+      )}
       {order.note && (
         <div>
           <span className="text-sm text-[var(--color-text-muted)]">{t("cleaner.jobDetail.notes")}</span>

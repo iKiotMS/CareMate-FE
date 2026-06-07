@@ -15,7 +15,7 @@ export const useAuth = () => {
   const queryClient = useQueryClient();
 
   const loginMutation = useMutation({
-    mutationFn: (data: { email: string; password: string }) =>
+    mutationFn: (data: { phone: string; password: string }) =>
       apiClient.post("/auth/login", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user"] });
@@ -24,10 +24,10 @@ export const useAuth = () => {
 
   const registerMutation = useMutation({
     mutationFn: (data: {
-      email: string;
+      phone: string;
       password: string;
       fullName: string;
-      phone?: string;
+      email?: string;
     }) => apiClient.post("/auth/register", data),
   });
 
@@ -62,8 +62,11 @@ export const useUser = () => {
 export const useUpdateProfile = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: { fullName?: string; phone?: string; avatarUrl?: string | null }) =>
-      apiClient.patch("/users/me", data).then((r) => r.data),
+    mutationFn: (data: {
+      fullName?: string;
+      phone?: string;
+      avatarUrl?: string | null;
+    }) => apiClient.patch("/users/me", data).then((r) => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user"] });
     },
@@ -88,7 +91,9 @@ export const useCreateOrder = () => {
       apiClient.post("/customers/orders", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["customer", "orders"] });
-      queryClient.invalidateQueries({ queryKey: ["cleaner", "available-orders"] });
+      queryClient.invalidateQueries({
+        queryKey: ["cleaner", "available-orders"],
+      });
     },
   });
 };
@@ -100,7 +105,9 @@ export const useCancelOrder = () => {
       apiClient.patch(`/customers/orders/${orderId}/cancel`, { reason }),
     onSuccess: (_data, { orderId }) => {
       queryClient.invalidateQueries({ queryKey: ["customer", "orders"] });
-      queryClient.invalidateQueries({ queryKey: ["customer", "orders", orderId] });
+      queryClient.invalidateQueries({
+        queryKey: ["customer", "orders", orderId],
+      });
     },
   });
 };
@@ -117,10 +124,15 @@ export const useSubmitReview = () => {
       rating: number;
       comment?: string;
     }) =>
-      apiClient.patch(`/customers/orders/${orderId}/review`, { rating, comment }),
+      apiClient.patch(`/customers/orders/${orderId}/review`, {
+        rating,
+        comment,
+      }),
     onSuccess: (_data, { orderId }) => {
       queryClient.invalidateQueries({ queryKey: ["customer", "orders"] });
-      queryClient.invalidateQueries({ queryKey: ["customer", "orders", orderId] });
+      queryClient.invalidateQueries({
+        queryKey: ["customer", "orders", orderId],
+      });
     },
   });
 };
@@ -207,8 +219,12 @@ export const useApplyForOrder = () => {
     mutationFn: (orderId: string) =>
       apiClient.post(`/cleaner/available-orders/${orderId}/apply`, {}),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["cleaner", "available-orders"] });
-      queryClient.invalidateQueries({ queryKey: ["cleaner", "applied-orders"] });
+      queryClient.invalidateQueries({
+        queryKey: ["cleaner", "available-orders"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["cleaner", "applied-orders"],
+      });
       queryClient.invalidateQueries({ queryKey: ["cleaner", "jobs"] });
       queryClient.invalidateQueries({ queryKey: ["customer", "orders"] });
     },
@@ -287,7 +303,9 @@ export const useCheckInJob = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ jobId, photos }: { jobId: string; photos: string[] }) =>
-      apiClient.patch(`/cleaner/jobs/${jobId}/check-in`, { photosCheckin: photos }),
+      apiClient.patch(`/cleaner/jobs/${jobId}/check-in`, {
+        photosCheckin: photos,
+      }),
     onSuccess: (_data, { jobId }) => {
       invalidateCleanerJob(queryClient, jobId);
     },
@@ -441,7 +459,13 @@ export const useAdminOrders = (filters?: {
 export const useAdminAssignCleaner = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ orderId, cleanerId }: { orderId: string; cleanerId: string }) =>
+    mutationFn: ({
+      orderId,
+      cleanerId,
+    }: {
+      orderId: string;
+      cleanerId: string;
+    }) =>
       apiClient.patch(`/admin/orders/${orderId}/assign-cleaner`, { cleanerId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "orders"] });
@@ -453,8 +477,16 @@ export const useAdminAssignCleaner = () => {
 export const useAdminReassignCleaner = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ orderId, cleanerId }: { orderId: string; cleanerId: string }) =>
-      apiClient.patch(`/admin/orders/${orderId}/reassign-cleaner`, { cleanerId }),
+    mutationFn: ({
+      orderId,
+      cleanerId,
+    }: {
+      orderId: string;
+      cleanerId: string;
+    }) =>
+      apiClient.patch(`/admin/orders/${orderId}/reassign-cleaner`, {
+        cleanerId,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "orders"] });
     },
@@ -487,8 +519,12 @@ export const useAdminTasks = () => {
 export const useAdminCreateTask = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: { name: string; slug: string; price: number; sortOrder?: number }) =>
-      apiClient.post("/admin/tasks", data),
+    mutationFn: (data: {
+      name: string;
+      slug: string;
+      price: number;
+      sortOrder?: number;
+    }) => apiClient.post("/admin/tasks", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "tasks"] });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
@@ -516,7 +552,9 @@ export function useMyNotifications(page = 1, limit = 20) {
     queryKey: ["notifications", page, limit],
     queryFn: () =>
       apiClient
-        .get<PaginatedResponse<Notification>>(`/notifications?page=${page}&limit=${limit}`)
+        .get<
+          PaginatedResponse<Notification>
+        >(`/notifications?page=${page}&limit=${limit}`)
         .then((r) => r.data),
   });
 }
@@ -546,7 +584,8 @@ export function useMarkNotificationsRead() {
 export function useMarkAllRead() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () => apiClient.patch("/notifications/read-all").then((r) => r.data),
+    mutationFn: () =>
+      apiClient.patch("/notifications/read-all").then((r) => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
   });
 }
@@ -559,7 +598,9 @@ export function useMyComplaints(page = 1, limit = 20) {
     queryKey: ["complaints", page, limit],
     queryFn: () =>
       apiClient
-        .get<PaginatedResponse<Complaint>>(`/complaints?page=${page}&limit=${limit}`)
+        .get<
+          PaginatedResponse<Complaint>
+        >(`/complaints?page=${page}&limit=${limit}`)
         .then((r) => r.data),
   });
 }
@@ -567,7 +608,8 @@ export function useMyComplaints(page = 1, limit = 20) {
 export function useMyComplaintById(id: string) {
   return useQuery({
     queryKey: ["complaints", id],
-    queryFn: () => apiClient.get<Complaint>(`/complaints/${id}`).then((r) => r.data),
+    queryFn: () =>
+      apiClient.get<Complaint>(`/complaints/${id}`).then((r) => r.data),
     enabled: !!id,
   });
 }
@@ -589,7 +631,12 @@ export function useCreateComplaint() {
 // COMPLAINTS — ADMIN
 // ─────────────────────────────────────────────────────────────────────────────
 export function useAdminComplaints(
-  filters: { status?: string; category?: string; page?: number; limit?: number } = {},
+  filters: {
+    status?: string;
+    category?: string;
+    page?: number;
+    limit?: number;
+  } = {},
 ) {
   const params = new URLSearchParams();
   if (filters.status) params.set("status", filters.status);
@@ -618,11 +665,20 @@ export function useAdminComplaintById(id: string) {
 export function useAdminUpdateComplaintStatus() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, status, category }: { id: string; status: string; category?: string }) =>
+    mutationFn: ({
+      id,
+      status,
+      category,
+    }: {
+      id: string;
+      status: string;
+      category?: string;
+    }) =>
       apiClient
         .patch(`/admin/complaints/${id}/status`, { status, category })
         .then((r) => r.data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "complaints"] }),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ["admin", "complaints"] }),
   });
 }
 
@@ -642,7 +698,9 @@ export function useAdminReplyComplaint() {
 // ─────────────────────────────────────────────────────────────────────────────
 // INCOME — CLEANER
 // ─────────────────────────────────────────────────────────────────────────────
-export function useMyIncomeSummary(period: "daily" | "weekly" | "monthly" | "all" = "monthly") {
+export function useMyIncomeSummary(
+  period: "daily" | "weekly" | "monthly" | "all" = "monthly",
+) {
   return useQuery({
     queryKey: ["income", "summary", period],
     queryFn: () =>
@@ -663,9 +721,7 @@ export function useMyIncomeByOrder(
   return useQuery({
     queryKey: ["income", "orders", filters],
     queryFn: () =>
-      apiClient
-        .get(`/income/by-order?${params}`)
-        .then((r) => r.data),
+      apiClient.get(`/income/by-order?${params}`).then((r) => r.data),
   });
 }
 
@@ -732,7 +788,9 @@ export function useAdminPaymentStats(from?: string, to?: string) {
       const params = new URLSearchParams();
       if (from) params.set("from", from);
       if (to) params.set("to", to);
-      return apiClient.get(`/admin/payments/stats?${params}`).then((r) => r.data);
+      return apiClient
+        .get(`/admin/payments/stats?${params}`)
+        .then((r) => r.data);
     },
   });
 }
@@ -743,8 +801,7 @@ export function useAdminPaymentStats(from?: string, to?: string) {
 export function useMyAvailability() {
   return useQuery({
     queryKey: ["cleaner", "availability"],
-    queryFn: () =>
-      apiClient.get("/cleaner/availability").then((r) => r.data),
+    queryFn: () => apiClient.get("/cleaner/availability").then((r) => r.data),
   });
 }
 
@@ -756,7 +813,8 @@ export function useUpdateAvailability() {
       workingHours?: { start: string; end: string };
       daysOff?: string[];
     }) => apiClient.put("/cleaner/availability", data).then((r) => r.data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["cleaner", "availability"] }),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ["cleaner", "availability"] }),
   });
 }
 
@@ -780,16 +838,26 @@ export function useCleanerDashboard() {
 // ─────────────────────────────────────────────────────────────────────────────
 // REVIEWS — ADMIN
 // ─────────────────────────────────────────────────────────────────────────────
-export function useAdminReviews(filters: { minRating?: number; maxRating?: number; page?: number; limit?: number } = {}) {
+export function useAdminReviews(
+  filters: {
+    minRating?: number;
+    maxRating?: number;
+    page?: number;
+    limit?: number;
+  } = {},
+) {
   const params = new URLSearchParams();
-  if (filters.minRating !== undefined) params.set("minRating", String(filters.minRating));
-  if (filters.maxRating !== undefined) params.set("maxRating", String(filters.maxRating));
+  if (filters.minRating !== undefined)
+    params.set("minRating", String(filters.minRating));
+  if (filters.maxRating !== undefined)
+    params.set("maxRating", String(filters.maxRating));
   params.set("page", String(filters.page ?? 1));
   params.set("limit", String(filters.limit ?? 20));
 
   return useQuery({
     queryKey: ["admin", "reviews", filters],
-    queryFn: () => apiClient.get(`/admin/reviews?${params}`).then((r) => r.data),
+    queryFn: () =>
+      apiClient.get(`/admin/reviews?${params}`).then((r) => r.data),
     enabled: hasToken(),
   });
 }
@@ -801,10 +869,10 @@ export function useCalculateOrderTotal() {
   return useMutation({
     mutationFn: (taskIds: string[]) =>
       apiClient
-        .post<{ tasks: { taskId: string; taskName: string; price: number }[]; totalAmount: number }>(
-          "/tasks/calculate-total",
-          { taskIds },
-        )
+        .post<{
+          tasks: { taskId: string; taskName: string; price: number }[];
+          totalAmount: number;
+        }>("/tasks/calculate-total", { taskIds })
         .then((r) => r.data),
   });
 }
@@ -852,11 +920,20 @@ export function useOrderApplicants(orderId: string) {
 export function useSelectCleaner() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ orderId, cleanerId }: { orderId: string; cleanerId: string }) =>
+    mutationFn: ({
+      orderId,
+      cleanerId,
+    }: {
+      orderId: string;
+      cleanerId: string;
+    }) =>
       apiClient
         .post(`/orders/${orderId}/select-cleaner`, { cleanerId })
         .then((r) => r.data),
-    onSuccess: (_data: unknown, { orderId }: { orderId: string; cleanerId: string }) => {
+    onSuccess: (
+      _data: unknown,
+      { orderId }: { orderId: string; cleanerId: string },
+    ) => {
       qc.invalidateQueries({ queryKey: ["customer", "orders", orderId] });
       qc.invalidateQueries({ queryKey: ["orders", orderId, "applicants"] });
       qc.invalidateQueries({ queryKey: ["payments", orderId, "deposit"] });
@@ -868,7 +945,9 @@ export function useAdminConfirmDeposit() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (orderId: string) =>
-      apiClient.patch(`/orders/${orderId}/admin-confirm-deposit`).then((r) => r.data),
+      apiClient
+        .patch(`/orders/${orderId}/admin-confirm-deposit`)
+        .then((r) => r.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin", "orders"] });
     },
@@ -879,7 +958,9 @@ export function useAdminConfirmFinalPayment() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (orderId: string) =>
-      apiClient.patch(`/orders/${orderId}/admin-confirm-final-payment`).then((r) => r.data),
+      apiClient
+        .patch(`/orders/${orderId}/admin-confirm-final-payment`)
+        .then((r) => r.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin", "orders"] });
     },

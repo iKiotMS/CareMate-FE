@@ -151,7 +151,7 @@ export const MOCK_ORDERS = {
     _id: "660f5c1234567890abcdef21",
     customerId: "660f5c1234567890abcdef01",
     cleanerId: "660f5c1234567890abcdef02",
-    status: "ASSIGNED",
+    status: "CONFIRMED",
     scheduledDate: "2026-06-06",
     scheduledTime: "14:00 - 16:00",
     address: "456 Oak Ave, Springfield, IL 62702",

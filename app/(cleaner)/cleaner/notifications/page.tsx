@@ -43,7 +43,7 @@ export default function CleanerNotificationsPage() {
         ) : isError ? (
           <ErrorState onRetry={refetch} />
         ) : notifications.length === 0 ? (
-          <EmptyState message="Không có thông báo nào." />
+          <EmptyState title="Không có thông báo nào." />
         ) : (
           notifications.map((n: any) => (
             <Card

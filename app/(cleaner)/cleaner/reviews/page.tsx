@@ -22,7 +22,7 @@ export default function CleanerReviewsPage() {
         ) : isError ? (
           <ErrorState onRetry={refetch} />
         ) : reviews.length === 0 ? (
-          <EmptyState message="Chưa có đánh giá nào." />
+          <EmptyState title="Chưa có đánh giá nào." />
         ) : (
           reviews.map((r: any) => (
             <Card key={r._id}>
