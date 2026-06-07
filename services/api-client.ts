@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosError } from "axios";
 import Cookies from "js-cookie";
+import { resolveMock } from "./mock-interceptor";
 
 class ApiClient {
   private client: AxiosInstance;
@@ -32,6 +33,7 @@ class ApiClient {
       async (error: AxiosError) => {
         const originalRequest = error.config as any;
 
+        // ── Token refresh on 401 ─────────────────────────────────────────────
         if (error.response?.status === 401 && !originalRequest._retry) {
           originalRequest._retry = true;
 
@@ -51,6 +53,35 @@ class ApiClient {
               Cookies.remove("refreshToken");
               window.location.href = "/login";
             }
+          }
+        }
+
+        // ── Mock fallback for unimplemented BE endpoints ──────────────────────
+        // Triggered when BE returns 404 or the server is unreachable (network error).
+        // Once the real endpoint is live, it returns 200 and this block is skipped.
+        const status = error.response?.status;
+        const isNotFound = status === 404;
+        const isServerError = status === 500;
+        const isNetworkError = !error.response && error.code !== "ECONNABORTED";
+
+        if ((isNotFound || isServerError || isNetworkError) && !originalRequest._mocked) {
+          originalRequest._mocked = true;
+
+          const mockData = resolveMock(
+            originalRequest.method,
+            originalRequest.url,
+            originalRequest.data ? JSON.parse(originalRequest.data) : undefined,
+          );
+
+          if (mockData !== null) {
+            console.info(`[mock] ${originalRequest.method?.toUpperCase()} ${originalRequest.url}`);
+            return Promise.resolve({
+              data: mockData,
+              status: 200,
+              statusText: "OK (mock)",
+              headers: {},
+              config: originalRequest,
+            });
           }
         }
 
