@@ -2,10 +2,12 @@ export type UserRole = "customer" | "cleaner" | "admin";
 
 export type OrderStatus =
   | "PENDING"
-  | "ASSIGNED"
+  | "ON_HOLD_PAYMENT"
+  | "CONFIRMED"
   | "ACCEPTED"
   | "IN_PROGRESS"
   | "REVIEW_PENDING"
+  | "PAYMENT_PENDING"
   | "COMPLETED"
   | "CANCELLED";
 
@@ -43,12 +45,39 @@ export interface OrderTask {
   photoAfter?: string | null;
 }
 
+export interface OrderApplicant {
+  cleanerId: string;
+  cleanerName?: string | null;
+  cleanerAvatar?: string | null;
+  cleanerRating?: number | null;
+  completedJobs?: number;
+  appliedAt: string;
+  status: "PENDING" | "SELECTED" | "REJECTED";
+}
+
+export interface DepositInfo {
+  paymentId: string;
+  accountNumber: string;
+  bankName: string;
+  accountName: string;
+  amount: number;
+  content: string;
+  qrDataUrl: string;
+  expiresAt: string;
+}
+
+export interface FinalPaymentInfo extends DepositInfo {
+  depositPaid: number;
+  originalTotal: number;
+}
+
 export interface Order {
   _id: string;
   customerId: string;
   customerName?: string;
   cleanerId?: string | null;
   cleanerName?: string | null;
+  pendingCleanerId?: string | null;
   status: OrderStatus;
   scheduledDate: string;
   scheduledTime: string;
@@ -58,6 +87,8 @@ export interface Order {
   photosBeforeBooking?: string[];
   photosCheckin?: string[];
   photosAfter?: string[];
+  applicants?: OrderApplicant[];
+  depositDeadline?: string | null;
   rating?: number | null;
   review?: string | null;
   totalAmount: number;

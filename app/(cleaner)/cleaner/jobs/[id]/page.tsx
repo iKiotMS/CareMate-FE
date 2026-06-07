@@ -196,7 +196,7 @@ export default function CleanerJobDetailPage({ params }: { params: { id: string 
         className="hidden"
         onChange={(e) => handleCheckIn(e.target.files)}
       />
-      {status === "ASSIGNED" && (
+      {status === "CONFIRMED" && (
         <Button onClick={handleAccept} disabled={accepting}>
           {accepting ? t("common.loading") : t("common.accept")}
         </Button>
@@ -216,7 +216,7 @@ export default function CleanerJobDetailPage({ params }: { params: { id: string 
         </>
       )}
       {status === "IN_PROGRESS" && <Badge variant="success">Đã check-in</Badge>}
-      {["REVIEW_PENDING", "COMPLETED"].includes(status) && (
+      {["REVIEW_PENDING", "PAYMENT_PENDING", "COMPLETED"].includes(status) && (
         <Badge variant="success">Đã hoàn thành quy trình</Badge>
       )}
     </div>
@@ -224,7 +224,7 @@ export default function CleanerJobDetailPage({ params }: { params: { id: string 
 
   const tasksTab = (
     <div className="space-y-4">
-      {status !== "IN_PROGRESS" && status !== "REVIEW_PENDING" && status !== "COMPLETED" && (
+      {!["IN_PROGRESS", "REVIEW_PENDING", "PAYMENT_PENDING", "COMPLETED"].includes(status) && (
         <p className="text-sm text-amber-600">Check-in trước khi làm từng công việc.</p>
       )}
       {tasks.map((task, i) => (
@@ -287,28 +287,65 @@ export default function CleanerJobDetailPage({ params }: { params: { id: string 
 
   const completeTab = (
     <div className="space-y-4">
-      <Card className="bg-[var(--color-bg-muted)]">
-        <div className="flex items-center gap-2 mb-3">
-          <Brain className="w-5 h-5 text-[var(--color-primary)]" />
-          <span className="font-medium">{t("cleaner.jobDetail.aiCheck")}</span>
-        </div>
-        <div className="space-y-2 text-sm">
-          <p className="flex items-center gap-2">
-            {allDone ? <Check className="w-4 h-4 text-[var(--color-success)]" /> : "○"}{" "}
-            {t("cleaner.jobDetail.allTasksDone")}
+      {status === "REVIEW_PENDING" && (
+        <Card className="bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800">
+          <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+            Đã hoàn thành công việc — đang chờ khách hàng đánh giá.
           </p>
-          <p className="flex items-center gap-2">
-            {allDone ? <Check className="w-4 h-4 text-[var(--color-success)]" /> : "○"}{" "}
-            {t("cleaner.jobDetail.allPhotosUploaded")}
+          <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
+            Khách sẽ để lại đánh giá và tiến hành thanh toán phần còn lại.
           </p>
-        </div>
-      </Card>
-      <Button
-        disabled={!allDone || status !== "IN_PROGRESS" || completing}
-        onClick={handleComplete}
-      >
-        {completing ? t("common.loading") : t("cleaner.jobDetail.completeJob")}
-      </Button>
+        </Card>
+      )}
+
+      {status === "PAYMENT_PENDING" && (
+        <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
+          <p className="text-sm font-medium text-blue-800 dark:text-blue-300">
+            Khách đã đánh giá — đang chờ thanh toán phần còn lại.
+          </p>
+          <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">
+            Thu nhập sẽ được ghi nhận sau khi thanh toán hoàn tất.
+          </p>
+        </Card>
+      )}
+
+      {status === "COMPLETED" && (
+        <Card className="bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800">
+          <p className="text-sm font-medium text-green-800 dark:text-green-300">
+            ✓ Đơn hoàn thành — thanh toán đã được xác nhận.
+          </p>
+        </Card>
+      )}
+
+      {status === "IN_PROGRESS" && (
+        <>
+          <Card className="bg-[var(--color-bg-muted)]">
+            <div className="flex items-center gap-2 mb-3">
+              <Brain className="w-5 h-5 text-[var(--color-primary)]" />
+              <span className="font-medium">{t("cleaner.jobDetail.aiCheck")}</span>
+            </div>
+            <div className="space-y-2 text-sm">
+              <p className="flex items-center gap-2">
+                {allDone ? <Check className="w-4 h-4 text-[var(--color-success)]" /> : "○"}{" "}
+                {t("cleaner.jobDetail.allTasksDone")}
+              </p>
+              <p className="flex items-center gap-2">
+                {allDone ? <Check className="w-4 h-4 text-[var(--color-success)]" /> : "○"}{" "}
+                {t("cleaner.jobDetail.allPhotosUploaded")}
+              </p>
+            </div>
+          </Card>
+          <Button disabled={!allDone || completing} onClick={handleComplete}>
+            {completing ? t("common.loading") : t("cleaner.jobDetail.completeJob")}
+          </Button>
+        </>
+      )}
+
+      {!["IN_PROGRESS", "REVIEW_PENDING", "PAYMENT_PENDING", "COMPLETED"].includes(status) && (
+        <p className="text-sm text-[var(--color-text-muted)]">
+          Hoàn thành check-in và tất cả công việc trước khi nộp kết quả.
+        </p>
+      )}
     </div>
   );
 

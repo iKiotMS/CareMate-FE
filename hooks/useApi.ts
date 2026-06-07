@@ -146,6 +146,12 @@ export const useCustomerOrderDetail = (orderId: string) => {
       return response.data;
     },
     enabled: hasToken() && !!orderId,
+    refetchInterval: (query) => {
+      const status = (query.state.data as any)?.status;
+      return status === "ON_HOLD_PAYMENT" || status === "PAYMENT_PENDING"
+        ? 8_000
+        : false;
+    },
   });
 };
 
@@ -171,6 +177,18 @@ export const useCleanerJobDetail = (jobId: string) => {
   });
 };
 
+export const useCleanerAppliedOrders = () => {
+  return useQuery({
+    queryKey: ["cleaner", "applied-orders"],
+    queryFn: async () => {
+      const response = await apiClient.get("/cleaner/applied-orders");
+      return response.data;
+    },
+    enabled: hasToken(),
+    refetchInterval: 30_000,
+  });
+};
+
 export const useAvailableOrders = () => {
   return useQuery({
     queryKey: ["cleaner", "available-orders"],
@@ -190,6 +208,7 @@ export const useApplyForOrder = () => {
       apiClient.post(`/cleaner/available-orders/${orderId}/apply`, {}),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cleaner", "available-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["cleaner", "applied-orders"] });
       queryClient.invalidateQueries({ queryKey: ["cleaner", "jobs"] });
       queryClient.invalidateQueries({ queryKey: ["customer", "orders"] });
     },
@@ -787,5 +806,82 @@ export function useCalculateOrderTotal() {
           { taskIds },
         )
         .then((r) => r.data),
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PAYMENTS — SEPAY
+// ─────────────────────────────────────────────────────────────────────────────
+import type { DepositInfo, FinalPaymentInfo, OrderApplicant } from "@/types";
+
+export function useDepositInfo(orderId: string) {
+  return useQuery({
+    queryKey: ["payments", orderId, "deposit"],
+    queryFn: () =>
+      apiClient
+        .get<DepositInfo>(`/payments/orders/${orderId}/deposit-info`)
+        .then((r) => r.data),
+    enabled: !!orderId && hasToken(),
+    refetchInterval: 10_000,
+  });
+}
+
+export function useFinalPaymentInfo(orderId: string) {
+  return useQuery({
+    queryKey: ["payments", orderId, "final"],
+    queryFn: () =>
+      apiClient
+        .get<FinalPaymentInfo>(`/payments/orders/${orderId}/final-info`)
+        .then((r) => r.data),
+    enabled: !!orderId && hasToken(),
+    refetchInterval: 10_000,
+  });
+}
+
+export function useOrderApplicants(orderId: string) {
+  return useQuery({
+    queryKey: ["orders", orderId, "applicants"],
+    queryFn: () =>
+      apiClient
+        .get<OrderApplicant[]>(`/orders/${orderId}/applicants`)
+        .then((r) => r.data),
+    enabled: !!orderId && hasToken(),
+  });
+}
+
+export function useSelectCleaner() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ orderId, cleanerId }: { orderId: string; cleanerId: string }) =>
+      apiClient
+        .post(`/orders/${orderId}/select-cleaner`, { cleanerId })
+        .then((r) => r.data),
+    onSuccess: (_data: unknown, { orderId }: { orderId: string; cleanerId: string }) => {
+      qc.invalidateQueries({ queryKey: ["customer", "orders", orderId] });
+      qc.invalidateQueries({ queryKey: ["orders", orderId, "applicants"] });
+      qc.invalidateQueries({ queryKey: ["payments", orderId, "deposit"] });
+    },
+  });
+}
+
+export function useAdminConfirmDeposit() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (orderId: string) =>
+      apiClient.patch(`/orders/${orderId}/admin-confirm-deposit`).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "orders"] });
+    },
+  });
+}
+
+export function useAdminConfirmFinalPayment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (orderId: string) =>
+      apiClient.patch(`/orders/${orderId}/admin-confirm-final-payment`).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "orders"] });
+    },
   });
 }
