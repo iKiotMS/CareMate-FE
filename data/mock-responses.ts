@@ -315,6 +315,21 @@ export function makeMockCalculateTotal(taskIds: string[]) {
   return { tasks, totalAmount };
 }
 
+// ─── Admin Reviews ────────────────────────────────────────────────────────────
+export const MOCK_ADMIN_REVIEWS = {
+  data: [
+    { _id: "rv1", orderId: "ord004", customerName: "Nguyễn Minh An",  cleanerName: "Trần Văn Hùng",  rating: 5, comment: "Rất hài lòng, dọn sạch và đúng giờ!",   createdAt: new Date(Date.now() - 3  * 24 * 3600_000).toISOString() },
+    { _id: "rv2", orderId: "ord010", customerName: "Phạm Thu Hà",     cleanerName: "Nguyễn Thị Lan", rating: 2, comment: "Một số góc chưa dọn kỹ, cần cải thiện.", createdAt: new Date(Date.now() - 8  * 24 * 3600_000).toISOString() },
+    { _id: "rv3", orderId: "ord011", customerName: "Hoàng Đức Bình",  cleanerName: "Trần Văn Hùng",  rating: 4, comment: "Tốt, sẽ đặt lại.",                       createdAt: new Date(Date.now() - 12 * 24 * 3600_000).toISOString() },
+    { _id: "rv4", orderId: "ord012", customerName: "Lê Văn Cường",    cleanerName: "Trần Minh Đức",  rating: 3, comment: "Bình thường.",                            createdAt: new Date(Date.now() - 16 * 24 * 3600_000).toISOString() },
+    { _id: "rv5", orderId: "ord013", customerName: "Vũ Thị Hoa",      cleanerName: "Nguyễn Thị Lan", rating: 5, comment: "Nhân viên thân thiện, nhà sạch bóng.",   createdAt: new Date(Date.now() - 20 * 24 * 3600_000).toISOString() },
+    { _id: "rv6", orderId: "ord014", customerName: "Đặng Minh Tuấn",  cleanerName: "Trần Minh Đức",  rating: 1, comment: "Nhân viên đến trễ, chất lượng rất kém.", createdAt: new Date(Date.now() - 25 * 24 * 3600_000).toISOString() },
+  ],
+  total: 312,
+  page: 1,
+  limit: 20,
+};
+
 // ─── Audit Logs ───────────────────────────────────────────────────────────────
 export const MOCK_AUDIT_LOGS = {
   data: [

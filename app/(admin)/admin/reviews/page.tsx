@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useAdminRatingAnalytics, useAdminCleanerPerformance } from "@/hooks/useApi";
+import { useAdminRatingAnalytics, useAdminReviews } from "@/hooks/useApi";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { FilterTabs } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
@@ -18,34 +18,26 @@ const RATING_FILTERS = [
   { id: "high",   label: t("admin.reviews.high") },
 ];
 
-// Mock reviews derived from cleaner performance data for demo
-const DEMO_REVIEWS = [
-  { _id: "rv1", customerName: "Nguyễn Minh An",  cleanerName: "Trần Văn Hùng",  rating: 5, comment: "Rất hài lòng, dọn sạch và đúng giờ!",        createdAt: "2026-05-16T10:00:00Z" },
-  { _id: "rv2", customerName: "Phạm Thu Hà",     cleanerName: "Nguyễn Thị Lan", rating: 2, comment: "Một số góc chưa dọn kỹ, cần cải thiện.",       createdAt: "2026-05-20T14:00:00Z" },
-  { _id: "rv3", customerName: "Hoàng Đức Bình",  cleanerName: "Trần Văn Hùng",  rating: 4, comment: "Tốt, sẽ đặt lại.",                             createdAt: "2026-05-22T09:00:00Z" },
-  { _id: "rv4", customerName: "Lê Văn Cường",    cleanerName: "Trần Minh Đức",  rating: 3, comment: "Bình thường.",                                  createdAt: "2026-05-25T11:00:00Z" },
-  { _id: "rv5", customerName: "Vũ Thị Hoa",      cleanerName: "Nguyễn Thị Lan", rating: 5, comment: "Nhân viên thân thiện, nhà sạch bóng.",          createdAt: "2026-05-28T15:00:00Z" },
-  { _id: "rv6", customerName: "Đặng Minh Tuấn",  cleanerName: "Trần Minh Đức",  rating: 1, comment: "Nhân viên đến trễ và chất lượng rất kém.",      createdAt: "2026-06-01T08:00:00Z" },
-];
+function filterToRange(filter: string) {
+  if (filter === "low")    return { minRating: 1, maxRating: 2 };
+  if (filter === "medium") return { minRating: 3, maxRating: 3 };
+  if (filter === "high")   return { minRating: 4, maxRating: 5 };
+  return {};
+}
 
 export default function AdminReviewsPage() {
   const [filter, setFilter] = useState("all");
-  const { data: analytics, isLoading, isError, refetch } = useAdminRatingAnalytics();
+  const { data: analytics, isLoading: analyticsLoading } = useAdminRatingAnalytics();
+  const { data: reviewsData, isLoading, isError, refetch } = useAdminReviews(filterToRange(filter));
 
-  const filtered = filter === "low"
-    ? DEMO_REVIEWS.filter((r) => r.rating <= 2)
-    : filter === "medium"
-    ? DEMO_REVIEWS.filter((r) => r.rating === 3)
-    : filter === "high"
-    ? DEMO_REVIEWS.filter((r) => r.rating >= 4)
-    : DEMO_REVIEWS;
+  const reviews = (reviewsData as any)?.data ?? [];
 
   return (
     <div className="p-6 space-y-6">
       <PageHeader title={t("admin.reviews.title")} />
 
       {/* Summary bar */}
-      {!isLoading && !isError && analytics && (
+      {!analyticsLoading && analytics && (
         <div className="flex items-center gap-6 p-4 rounded-xl bg-[var(--color-bg-muted)]">
           <div>
             <p className="text-3xl font-bold text-[var(--color-primary)]">
@@ -82,7 +74,7 @@ export default function AdminReviewsPage() {
         <ErrorState onRetry={refetch} />
       ) : (
         <div className="space-y-3">
-          {filtered.map((r) => (
+          {reviews.map((r: any) => (
             <Card key={r._id}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>

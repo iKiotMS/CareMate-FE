@@ -6,6 +6,7 @@ import { useCreateComplaint, useCustomerOrders, useUploadPhotos } from "@/hooks/
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Input, FormField } from "@/components/ui/Input";
+import { t } from "@/lib/i18n";
 import { toast } from "sonner";
 import { getApiErrorMessage } from "@/lib/api-errors";
 
@@ -15,20 +16,19 @@ export default function NewComplaintPage() {
   const createComplaint = useCreateComplaint();
   const uploadPhotos = useUploadPhotos();
 
-  const [form, setForm] = useState({
-    orderId: "",
-    subject: "",
-    description: "",
-  });
+  const [form, setForm] = useState({ orderId: "", subject: "", description: "" });
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
 
-  const orders: any[] = Array.isArray(ordersData) ? ordersData : [];
+  // API trả về array hoặc { data: [] }
+  const orders: any[] = Array.isArray(ordersData)
+    ? ordersData
+    : (ordersData as any)?.data ?? [];
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.orderId || !form.subject.trim() || !form.description.trim()) {
-      toast.error("Please fill in all required fields");
+      toast.error("Vui lòng điền đầy đủ các trường bắt buộc");
       return;
     }
 
@@ -42,7 +42,7 @@ export default function NewComplaintPage() {
       }
 
       await createComplaint.mutateAsync({ ...form, evidenceUrls });
-      toast.success("Complaint submitted successfully");
+      toast.success(t("customer.complaints.submitSuccess"));
       router.push("/customer/complaints");
     } catch (err) {
       setUploading(false);
@@ -54,28 +54,28 @@ export default function NewComplaintPage() {
 
   return (
     <div className="p-6 max-w-lg">
-      <PageHeader title="File a Complaint" />
+      <PageHeader title={t("customer.complaints.newComplaint")} />
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-        <FormField label="Related Order" required>
+        <FormField label={t("customer.complaints.relatedOrder")} required>
           <select
             className="h-10 w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-sm text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
             value={form.orderId}
             onChange={(e) => setForm({ ...form, orderId: e.target.value })}
             required
           >
-            <option value="">Select an order</option>
+            <option value="">{t("customer.complaints.selectOrder")}</option>
             {orders.map((o) => (
               <option key={o._id} value={o._id}>
-                #{o._id.slice(-6).toUpperCase()} — {o.scheduledDate}
+                #{o._id.slice(-6).toUpperCase()} — {o.scheduledDate ?? o.createdAt?.slice(0, 10)}
               </option>
             ))}
           </select>
         </FormField>
 
-        <FormField label="Subject" required>
+        <FormField label={t("customer.complaints.subject")} required>
           <Input
-            placeholder="Brief description of the issue"
+            placeholder={t("customer.complaints.subjectPlaceholder")}
             value={form.subject}
             onChange={(e) => setForm({ ...form, subject: e.target.value })}
             maxLength={100}
@@ -83,10 +83,10 @@ export default function NewComplaintPage() {
           />
         </FormField>
 
-        <FormField label="Description" required>
+        <FormField label={t("customer.complaints.description")} required>
           <textarea
             className="min-h-[120px] w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] resize-none"
-            placeholder="Describe the issue in detail"
+            placeholder={t("customer.complaints.descriptionPlaceholder")}
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
             maxLength={2000}
@@ -94,7 +94,7 @@ export default function NewComplaintPage() {
           />
         </FormField>
 
-        <FormField label="Evidence Photos (optional)">
+        <FormField label={t("customer.complaints.evidence")}>
           <input
             type="file"
             accept="image/*"
@@ -103,21 +103,18 @@ export default function NewComplaintPage() {
             className="text-sm text-[var(--color-text-secondary)]"
           />
           {files.length > 0 && (
-            <p className="text-xs text-[var(--color-text-muted)]">{files.length} file(s) selected</p>
+            <p className="text-xs text-[var(--color-text-muted)] mt-1">
+              {t("customer.complaints.filesSelected", { count: files.length })}
+            </p>
           )}
         </FormField>
 
         <div className="flex gap-3 pt-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => router.back()}
-            disabled={isPending}
-          >
-            Cancel
+          <Button type="button" variant="outline" onClick={() => router.back()} disabled={isPending}>
+            {t("common.cancel")}
           </Button>
           <Button type="submit" loading={isPending}>
-            Submit Complaint
+            {t("customer.complaints.submit")}
           </Button>
         </div>
       </form>

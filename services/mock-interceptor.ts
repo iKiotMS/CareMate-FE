@@ -26,6 +26,7 @@ import {
   MOCK_CLEANER_DASHBOARD,
   makeMockCalculateTotal,
   MOCK_AUDIT_LOGS,
+  MOCK_ADMIN_REVIEWS,
 } from "@/data/mock-responses";
 
 type MockResult = unknown | null;
@@ -88,6 +89,9 @@ export function resolveMock(
     const taskIds = (body as any)?.taskIds ?? [];
     return makeMockCalculateTotal(taskIds);
   }
+
+  // ── Admin Reviews ──────────────────────────────────────────────────────────
+  if (m === "get" && path === "admin/reviews") return MOCK_ADMIN_REVIEWS;
 
   // ── Audit Logs ─────────────────────────────────────────────────────────────
   if (m === "get" && path === "admin/audit-logs") return MOCK_AUDIT_LOGS;

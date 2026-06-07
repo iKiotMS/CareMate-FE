@@ -59,6 +59,17 @@ export const useUser = () => {
   });
 };
 
+export const useUpdateProfile = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { fullName?: string; phone?: string; avatarUrl?: string | null }) =>
+      apiClient.patch("/users/me", data).then((r) => r.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user"] });
+    },
+  });
+};
+
 /** Payload tạo đơn — khớp CreateOrderDto BE */
 export interface CreateOrderPayload {
   scheduledDate: string;
@@ -744,6 +755,23 @@ export function useCleanerDashboard() {
   return useQuery({
     queryKey: ["cleaner", "dashboard"],
     queryFn: () => apiClient.get("/cleaner/dashboard").then((r) => r.data),
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// REVIEWS — ADMIN
+// ─────────────────────────────────────────────────────────────────────────────
+export function useAdminReviews(filters: { minRating?: number; maxRating?: number; page?: number; limit?: number } = {}) {
+  const params = new URLSearchParams();
+  if (filters.minRating !== undefined) params.set("minRating", String(filters.minRating));
+  if (filters.maxRating !== undefined) params.set("maxRating", String(filters.maxRating));
+  params.set("page", String(filters.page ?? 1));
+  params.set("limit", String(filters.limit ?? 20));
+
+  return useQuery({
+    queryKey: ["admin", "reviews", filters],
+    queryFn: () => apiClient.get(`/admin/reviews?${params}`).then((r) => r.data),
+    enabled: hasToken(),
   });
 }
 
