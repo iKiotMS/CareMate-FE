@@ -10,17 +10,46 @@ export const ORDER_STATUS_LABEL_KEYS: Record<OrderStatus, string> = {
   CANCELLED: "status.cancelled",
 };
 
+export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
+  PENDING: "Pending",
+  ASSIGNED: "Assigned",
+  ACCEPTED: "Accepted",
+  IN_PROGRESS: "In Progress",
+  REVIEW_PENDING: "Awaiting Review",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
+};
+
 export const ORDER_STATUS_VARIANT: Record<
   OrderStatus,
   "default" | "info" | "warning" | "success" | "danger" | "purple"
 > = {
-  PENDING: "default",
+  PENDING: "warning",
   ASSIGNED: "info",
-  ACCEPTED: "purple",
-  IN_PROGRESS: "warning",
-  REVIEW_PENDING: "info",
+  ACCEPTED: "info",
+  IN_PROGRESS: "info",
+  REVIEW_PENDING: "purple",
   COMPLETED: "success",
   CANCELLED: "danger",
+};
+
+export const PAYMENT_STATUS_VARIANT: Record<string, string> = {
+  UNPAID: "warning",
+  PAID: "success",
+  REFUNDED: "info",
+};
+
+export const COMPLAINT_STATUS_VARIANT: Record<string, string> = {
+  OPEN: "warning",
+  PROCESSING: "info",
+  RESOLVED: "success",
+  REJECTED: "danger",
+};
+
+export const PAYMENT_METHOD_LABEL: Record<string, string> = {
+  CASH: "Cash",
+  BANK_TRANSFER: "Bank Transfer",
+  E_WALLET: "E-Wallet",
 };
 
 export const TIME_SLOTS = [

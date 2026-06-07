@@ -46,10 +46,8 @@ export default function CustomerOrderDetailPage({ params }: { params: { id: stri
     return <div className="text-center py-12 text-[var(--color-text-muted)]">Không tìm thấy đơn hàng</div>;
   }
 
-  const statusOrder = ["PENDING", "ASSIGNED", "ACCEPTED", "IN_PROGRESS", "COMPLETED"];
-  const currentIdx = statusOrder.indexOf(
-    order.status === "REVIEW_PENDING" ? "COMPLETED" : order.status,
-  );
+  const statusOrder = ["PENDING", "ASSIGNED", "ACCEPTED", "IN_PROGRESS", "REVIEW_PENDING", "COMPLETED"];
+  const currentIdx = statusOrder.indexOf(order.status);
 
   const timeline = [
     {
@@ -66,10 +64,15 @@ export default function CustomerOrderDetailPage({ params }: { params: { id: stri
     { key: "accepted", label: t("customer.timeline.accepted"), done: currentIdx >= 2 },
     { key: "checkin", label: t("customer.timeline.checkin"), done: currentIdx >= 3 },
     {
+      key: "review_pending",
+      label: "Awaiting Review",
+      done: order.status === "COMPLETED",
+      active: order.status === "REVIEW_PENDING",
+    },
+    {
       key: "completed",
       label: t("customer.timeline.completed"),
-      done: order.status === "COMPLETED" || order.status === "REVIEW_PENDING",
-      active: order.status === "REVIEW_PENDING",
+      done: order.status === "COMPLETED",
     },
   ];
 
@@ -166,10 +169,13 @@ export default function CustomerOrderDetailPage({ params }: { params: { id: stri
             </Button>
           )}
 
-          {order.status === "REVIEW_PENDING" && order.rating == null && !showReview && (
-            <Button className="w-full" onClick={() => setShowReview(true)}>
-              {t("customer.orderDetail.writeReview")}
-            </Button>
+          {order.status === "REVIEW_PENDING" && !order.rating && !showReview && (
+            <div className="rounded-xl border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/5 p-4">
+              <h3 className="font-semibold text-[var(--color-text)] mb-3">Leave a Review</h3>
+              <Button className="w-full" onClick={() => setShowReview(true)}>
+                {t("customer.orderDetail.writeReview")}
+              </Button>
+            </div>
           )}
 
           {showReview && (

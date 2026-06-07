@@ -8,7 +8,8 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea, Select, FormField } from "@/components/ui/Input";
 import { t } from "@/lib/i18n";
-import { TIME_SLOTS, PAYMENT_METHODS } from "@/lib/constants";
+import { TIME_SLOTS, PAYMENT_METHODS, PAYMENT_METHOD_LABEL } from "@/lib/constants";
+import type { PaymentMethod } from "@/types";
 import {
   useCreateOrder,
   useTaskCatalog,
@@ -22,6 +23,7 @@ interface TaskItem {
   _id: string;
   name: string;
   description?: string;
+  price: number;
   isActive: boolean;
 }
 
@@ -41,6 +43,7 @@ export default function BookCleaningPage() {
     taskIds: [] as string[],
     payment: "",
   });
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CASH");
 
   const { data: tasksRaw, isLoading: tasksLoading } = useTaskCatalog(true);
   const { mutateAsync: createOrder, isPending: creating } = useCreateOrder();
@@ -227,14 +230,32 @@ export default function BookCleaningPage() {
                               </p>
                             )}
                           </div>
-                          {selected && (
-                            <Check className="w-5 h-5 text-[var(--color-primary)] shrink-0" />
-                          )}
+                          <div className="flex flex-col items-end gap-1 shrink-0">
+                            {task.price > 0 && (
+                              <span className="text-xs font-medium text-[var(--color-text-secondary)]">
+                                {task.price.toLocaleString("vi-VN")} ₫
+                              </span>
+                            )}
+                            {selected && (
+                              <Check className="w-5 h-5 text-[var(--color-primary)]" />
+                            )}
+                          </div>
                         </div>
                       </button>
                     );
                   })}
                 </div>
+
+                {selectedTasks.length > 0 && (
+                  <div className="mt-4 flex items-center justify-between rounded-lg bg-[var(--color-primary)]/5 px-4 py-3 border border-[var(--color-primary)]/20">
+                    <span className="text-sm font-medium text-[var(--color-text)]">Estimated Total</span>
+                    <span className="text-lg font-bold text-[var(--color-primary)]">
+                      {selectedTasks
+                        .reduce((sum, t) => sum + (t.price ?? 0), 0)
+                        .toLocaleString("vi-VN")} ₫
+                    </span>
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -358,34 +379,21 @@ export default function BookCleaningPage() {
               <CreditCard className="w-4 h-4" />
               {t("customer.book.paymentNote")}
             </p>
-            <div className="space-y-3">
-              {PAYMENT_METHODS.map((p) => (
-                <label
-                  key={p.id}
+            <div className="grid grid-cols-3 gap-2">
+              {(["CASH", "BANK_TRANSFER", "E_WALLET"] as const).map((method) => (
+                <button
+                  key={method}
+                  type="button"
+                  onClick={() => setPaymentMethod(method)}
                   className={cn(
-                    "flex items-center gap-3 p-4 rounded-[var(--radius-lg)] border-2 cursor-pointer",
-                    form.payment === p.id
-                      ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)]"
-                      : "border-[var(--color-border)]",
+                    "rounded-lg border p-3 text-center text-sm transition-colors",
+                    paymentMethod === method
+                      ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)] font-medium text-[var(--color-primary)]"
+                      : "border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)]",
                   )}
                 >
-                  <input
-                    type="radio"
-                    name="payment"
-                    checked={form.payment === p.id}
-                    onChange={() => setForm({ ...form, payment: p.id })}
-                    className="sr-only"
-                  />
-                  <div>
-                    <p className="font-medium">{p.name}</p>
-                    <p className="text-xs text-[var(--color-text-muted)]">
-                      {p.description}
-                    </p>
-                  </div>
-                  <span className="ml-auto text-xs px-2 py-0.5 rounded-full bg-[var(--color-warning-soft)] text-[var(--color-warning)]">
-                    {t("common.comingSoon")}
-                  </span>
-                </label>
+                  {PAYMENT_METHOD_LABEL[method]}
+                </button>
               ))}
             </div>
           </div>

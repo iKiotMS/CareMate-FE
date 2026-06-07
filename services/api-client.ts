@@ -71,6 +71,10 @@ class ApiClient {
     return this.client.patch<T>(url, data, config);
   }
 
+  put<T = any>(url: string, data?: any, config?: any) {
+    return this.client.put<T>(url, data, config);
+  }
+
   delete<T = any>(url: string, config?: any) {
     return this.client.delete<T>(url, config);
   }

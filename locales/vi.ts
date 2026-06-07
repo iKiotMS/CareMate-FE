@@ -75,7 +75,7 @@ export const vi = {
       tasks: "Danh mục công việc",
       reviews: "Giám sát đánh giá",
       complaints: "Khiếu nại",
-      analytics: "Phân tích",
+      analytics: "Doanh thu",
       aiCenter: "Trung tâm AI",
       settings: "Cài đặt",
     },

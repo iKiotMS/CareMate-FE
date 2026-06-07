@@ -54,10 +54,13 @@ export function Label({ className, ...props }: React.LabelHTMLAttributes<HTMLLab
   );
 }
 
-export function FormField({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
+export function FormField({ label, children, className, required }: { label: string; children: React.ReactNode; className?: string; required?: boolean }) {
   return (
     <div className={cn("mb-4", className)}>
-      <Label>{label}</Label>
+      <Label>
+        {label}
+        {required && <span className="ml-0.5 text-[var(--color-danger)]">*</span>}
+      </Label>
       {children}
     </div>
   );

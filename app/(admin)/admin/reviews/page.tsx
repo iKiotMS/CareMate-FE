@@ -30,22 +30,35 @@ export default function AdminReviewsPage() {
   return (
     <div>
       <PageHeader title={t("admin.reviews.title")} />
-      <FilterTabs tabs={FILTERS} active={filter} onChange={setFilter} className="mb-6" />
+      <FilterTabs
+        tabs={FILTERS}
+        active={filter}
+        onChange={setFilter}
+        className="mb-6"
+      />
 
       <div className="space-y-3">
         {reviews.map((r) => (
           <Card key={r._id}>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <p className="font-medium">{r.customerName} → {r.cleanerName}</p>
-                <p className="text-sm text-[var(--color-text-muted)]">{new Date(r.createdAt).toLocaleDateString("vi-VN")}</p>
+                <p className="font-medium">
+                  {r.customerName} → {r.cleanerName}
+                </p>
+                <p className="text-sm text-[var(--color-text-muted)]">
+                  {new Date(r.createdAt).toLocaleDateString("vi-VN")}
+                </p>
               </div>
               <div className="flex items-center gap-2">
-                <StarDisplay rating={r.rating} />
                 {r.rating <= 2 && <Badge variant="danger">Cần theo dõi</Badge>}
+                <StarDisplay rating={r.rating} />
               </div>
             </div>
-            {r.comment && <p className="text-sm mt-2 text-[var(--color-text-secondary)]">{r.comment}</p>}
+            {r.comment && (
+              <p className="text-sm mt-2 text-[var(--color-text-secondary)]">
+                {r.comment}
+              </p>
+            )}
           </Card>
         ))}
       </div>

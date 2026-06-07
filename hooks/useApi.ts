@@ -1,6 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Cookies from "js-cookie";
 import { apiClient } from "@/services/api-client";
+import type {
+  PaginatedResponse,
+  Notification,
+  Complaint,
+  IncomeSummary,
+} from "@/types";
 
 const hasToken = () =>
   typeof window !== "undefined" && !!Cookies.get("accessToken");
@@ -470,3 +476,287 @@ export const useAdminToggleTask = () => {
     },
   });
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NOTIFICATIONS
+// ─────────────────────────────────────────────────────────────────────────────
+export function useMyNotifications(page = 1, limit = 20) {
+  return useQuery({
+    queryKey: ["notifications", page, limit],
+    queryFn: () =>
+      apiClient
+        .get<PaginatedResponse<Notification>>(`/notifications?page=${page}&limit=${limit}`)
+        .then((r) => r.data),
+  });
+}
+
+export function useUnreadCount() {
+  return useQuery({
+    queryKey: ["notifications", "unread"],
+    queryFn: () =>
+      apiClient
+        .get<{ count: number }>("/notifications/unread-count")
+        .then((r) => r.data),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useMarkNotificationsRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (ids: string[]) =>
+      apiClient.patch("/notifications/read", { ids }).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+}
+
+export function useMarkAllRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiClient.patch("/notifications/read-all").then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPLAINTS — CUSTOMER
+// ─────────────────────────────────────────────────────────────────────────────
+export function useMyComplaints(page = 1, limit = 20) {
+  return useQuery({
+    queryKey: ["complaints", page, limit],
+    queryFn: () =>
+      apiClient
+        .get<PaginatedResponse<Complaint>>(`/complaints?page=${page}&limit=${limit}`)
+        .then((r) => r.data),
+  });
+}
+
+export function useMyComplaintById(id: string) {
+  return useQuery({
+    queryKey: ["complaints", id],
+    queryFn: () => apiClient.get<Complaint>(`/complaints/${id}`).then((r) => r.data),
+    enabled: !!id,
+  });
+}
+
+export function useCreateComplaint() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: {
+      orderId: string;
+      subject: string;
+      description: string;
+      evidenceUrls?: string[];
+    }) => apiClient.post<Complaint>("/complaints", data).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["complaints"] }),
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPLAINTS — ADMIN
+// ─────────────────────────────────────────────────────────────────────────────
+export function useAdminComplaints(
+  filters: { status?: string; category?: string; page?: number; limit?: number } = {},
+) {
+  const params = new URLSearchParams();
+  if (filters.status) params.set("status", filters.status);
+  if (filters.category) params.set("category", filters.category);
+  params.set("page", String(filters.page ?? 1));
+  params.set("limit", String(filters.limit ?? 20));
+
+  return useQuery({
+    queryKey: ["admin", "complaints", filters],
+    queryFn: () =>
+      apiClient
+        .get<PaginatedResponse<Complaint>>(`/admin/complaints?${params}`)
+        .then((r) => r.data),
+  });
+}
+
+export function useAdminComplaintById(id: string) {
+  return useQuery({
+    queryKey: ["admin", "complaints", id],
+    queryFn: () =>
+      apiClient.get<Complaint>(`/admin/complaints/${id}`).then((r) => r.data),
+    enabled: !!id,
+  });
+}
+
+export function useAdminUpdateComplaintStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status, category }: { id: string; status: string; category?: string }) =>
+      apiClient
+        .patch(`/admin/complaints/${id}/status`, { status, category })
+        .then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "complaints"] }),
+  });
+}
+
+export function useAdminReplyComplaint() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, message }: { id: string; message: string }) =>
+      apiClient
+        .post(`/admin/complaints/${id}/reply`, { message })
+        .then((r) => r.data),
+    onSuccess: (_: unknown, { id }: { id: string; message: string }) => {
+      qc.invalidateQueries({ queryKey: ["admin", "complaints", id] });
+    },
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INCOME — CLEANER
+// ─────────────────────────────────────────────────────────────────────────────
+export function useMyIncomeSummary(period: "daily" | "weekly" | "monthly" | "all" = "monthly") {
+  return useQuery({
+    queryKey: ["income", "summary", period],
+    queryFn: () =>
+      apiClient
+        .get<IncomeSummary>(`/income/summary?period=${period}`)
+        .then((r) => r.data),
+  });
+}
+
+export function useMyIncomeByOrder(
+  filters: { from?: string; to?: string; page?: number } = {},
+) {
+  const params = new URLSearchParams();
+  if (filters.from) params.set("from", filters.from);
+  if (filters.to) params.set("to", filters.to);
+  params.set("page", String(filters.page ?? 1));
+
+  return useQuery({
+    queryKey: ["income", "orders", filters],
+    queryFn: () =>
+      apiClient
+        .get(`/income/by-order?${params}`)
+        .then((r) => r.data),
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ANALYTICS — CLEANER
+// ─────────────────────────────────────────────────────────────────────────────
+export function useMyRatingAnalytics() {
+  return useQuery({
+    queryKey: ["cleaner", "analytics", "ratings"],
+    queryFn: () =>
+      apiClient.get("/cleaner/analytics/ratings").then((r) => r.data),
+  });
+}
+
+export function useMyReceivedReviews(page = 1, limit = 10) {
+  return useQuery({
+    queryKey: ["cleaner", "reviews", page],
+    queryFn: () =>
+      apiClient
+        .get(`/cleaner/analytics/reviews?page=${page}&limit=${limit}`)
+        .then((r) => r.data),
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ANALYTICS — ADMIN
+// ─────────────────────────────────────────────────────────────────────────────
+export function useAdminRatingAnalytics() {
+  return useQuery({
+    queryKey: ["admin", "analytics", "ratings"],
+    queryFn: () =>
+      apiClient.get("/admin/analytics/ratings").then((r) => r.data),
+  });
+}
+
+export function useAdminCleanerPerformance(
+  sortBy: "rating" | "completionRate" | "totalOrders" = "rating",
+  page = 1,
+) {
+  return useQuery({
+    queryKey: ["admin", "analytics", "cleaners", sortBy, page],
+    queryFn: () =>
+      apiClient
+        .get(`/admin/analytics/cleaners?sortBy=${sortBy}&page=${page}`)
+        .then((r) => r.data),
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// REVENUE — ADMIN
+// ─────────────────────────────────────────────────────────────────────────────
+export function useRevenueDashboard() {
+  return useQuery({
+    queryKey: ["admin", "revenue", "dashboard"],
+    queryFn: () =>
+      apiClient.get("/admin/revenue/dashboard").then((r) => r.data),
+  });
+}
+
+export function useAdminPaymentStats(from?: string, to?: string) {
+  return useQuery({
+    queryKey: ["admin", "payments", "stats", from, to],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (from) params.set("from", from);
+      if (to) params.set("to", to);
+      return apiClient.get(`/admin/payments/stats?${params}`).then((r) => r.data);
+    },
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AVAILABILITY — CLEANER
+// ─────────────────────────────────────────────────────────────────────────────
+export function useMyAvailability() {
+  return useQuery({
+    queryKey: ["cleaner", "availability"],
+    queryFn: () =>
+      apiClient.get("/cleaner/availability").then((r) => r.data),
+  });
+}
+
+export function useUpdateAvailability() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: {
+      workingDays?: number[];
+      workingHours?: { start: string; end: string };
+      daysOff?: string[];
+    }) => apiClient.put("/cleaner/availability", data).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["cleaner", "availability"] }),
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DASHBOARDS
+// ─────────────────────────────────────────────────────────────────────────────
+export function useCustomerDashboard() {
+  return useQuery({
+    queryKey: ["customer", "dashboard"],
+    queryFn: () => apiClient.get("/customers/dashboard").then((r) => r.data),
+  });
+}
+
+export function useCleanerDashboard() {
+  return useQuery({
+    queryKey: ["cleaner", "dashboard"],
+    queryFn: () => apiClient.get("/cleaner/dashboard").then((r) => r.data),
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PRICING
+// ─────────────────────────────────────────────────────────────────────────────
+export function useCalculateOrderTotal() {
+  return useMutation({
+    mutationFn: (taskIds: string[]) =>
+      apiClient
+        .post<{ tasks: { taskId: string; taskName: string; price: number }[]; totalAmount: number }>(
+          "/tasks/calculate-total",
+          { taskIds },
+        )
+        .then((r) => r.data),
+  });
+}

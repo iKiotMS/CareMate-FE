@@ -15,10 +15,10 @@ export default function CleanerNotificationsPage() {
       <PageHeader title={t("cleaner.notifications.title")} />
       <div className="space-y-3 max-w-2xl">
         {notifications.map((n) => (
-          <Card key={n._id} className={cn(!n.read && "border-l-4 border-l-[var(--color-primary)]")}>
+          <Card key={n._id} className={cn(!n.isRead && "border-l-4 border-l-[var(--color-primary)]")}>
             <p className="font-medium">{n.title}</p>
-            <p className="text-sm text-[var(--color-text-secondary)] mt-1">{n.message}</p>
-            {!n.read && <Badge variant="info" className="mt-2">Mới</Badge>}
+            <p className="text-sm text-[var(--color-text-secondary)] mt-1">{n.body}</p>
+            {!n.isRead && <Badge variant="info" className="mt-2">Mới</Badge>}
           </Card>
         ))}
       </div>
