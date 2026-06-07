@@ -122,6 +122,7 @@ export default function BookCleaningPage() {
         note: form.note.trim() || undefined,
         taskIds: form.taskIds,
         photosBeforeBooking: urls.length > 0 ? urls : undefined,
+        paymentMethod,
       });
       router.push("/customer/orders");
     } catch (err) {

@@ -67,6 +67,7 @@ export interface CreateOrderPayload {
   note?: string;
   taskIds: string[];
   photosBeforeBooking?: string[];
+  paymentMethod: "CASH" | "BANK_TRANSFER" | "E_WALLET";
 }
 
 export const useCreateOrder = () => {
@@ -456,7 +457,7 @@ export const useAdminTasks = () => {
 export const useAdminCreateTask = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: { name: string; slug: string; sortOrder?: number }) =>
+    mutationFn: (data: { name: string; slug: string; price: number; sortOrder?: number }) =>
       apiClient.post("/admin/tasks", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "tasks"] });
