@@ -1,226 +1,222 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/services/api-client";
-import { useRouter } from "next/navigation";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { OrderStatusBadge } from "@/components/shared/OrderStatusBadge";
+import { DataTable, TableRow, TableCell } from "@/components/ui/DataTable";
+import { Button } from "@/components/ui/Button";
+import { Select, FormField } from "@/components/ui/Input";
+import { Card } from "@/components/ui/Card";
+import { t } from "@/lib/i18n";
+import {
+  useAdminOrders,
+  useAdminCleaners,
+  useAdminAssignCleaner,
+  useAdminReassignCleaner,
+  useAdminCancelOrder,
+  useAdminConfirmDeposit,
+  useAdminConfirmFinalPayment,
+} from "@/hooks/useApi";
+import { formatOrderDate, orderIdShort } from "@/lib/format";
+import { getApiErrorMessage } from "@/lib/api-errors";
+import type { Order, OrderStatus, User } from "@/types";
+import { Loader2 } from "lucide-react";
+
+const STATUS_OPTIONS = [
+  "PENDING",
+  "ON_HOLD_PAYMENT",
+  "CONFIRMED",
+  "ACCEPTED",
+  "IN_PROGRESS",
+  "REVIEW_PENDING",
+  "PAYMENT_PENDING",
+  "COMPLETED",
+  "CANCELLED",
+];
 
 export default function AdminOrdersPage() {
-  const queryClient = useQueryClient();
-  const router = useRouter();
-  const [status, setStatus] = useState<string>();
-  const [selectedOrderId, setSelectedOrderId] = useState<string>();
-  const [selectedCleanerId, setSelectedCleanerId] = useState("");
-  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("");
+  const [selectedOrder, setSelectedOrder] = useState<string | null>(null);
+  const [cleanerIdInput, setCleanerIdInput] = useState("");
+  const [error, setError] = useState("");
 
-  const { data: orders, isLoading: ordersLoading } = useQuery({
-    queryKey: ["admin", "orders", { status }],
-    queryFn: async () => {
-      const response = await apiClient.get("/admin/orders", {
-        params: { status },
-      });
-      return response.data;
-    },
+  const { data: ordersData, isLoading, refetch } = useAdminOrders({
+    status: statusFilter || undefined,
   });
+  const { data: cleanersData } = useAdminCleaners();
+  const { mutateAsync: assignCleaner, isPending: assigning } = useAdminAssignCleaner();
+  const { mutateAsync: reassignCleaner, isPending: reassigning } = useAdminReassignCleaner();
+  const { mutateAsync: cancelOrder, isPending: cancelling } = useAdminCancelOrder();
+  const { mutateAsync: confirmDeposit, isPending: confirmingDeposit } = useAdminConfirmDeposit();
+  const { mutateAsync: confirmFinalPayment, isPending: confirmingFinal } = useAdminConfirmFinalPayment();
 
-  const { data: cleaners } = useQuery({
-    queryKey: ["admin", "cleaners"],
-    queryFn: () => apiClient.get("/admin/cleaners"),
-  });
+  const orders = ((ordersData as { orders?: Order[] })?.orders ?? []) as Order[];
+  const cleaners = ((cleanersData as { cleaners?: User[] })?.cleaners ?? []) as User[];
+  const detail = selectedOrder ? orders.find((o) => o._id === selectedOrder) : null;
 
-  const assignMutation = useMutation({
-    mutationFn: ({
-      orderId,
-      cleanerId,
-    }: {
-      orderId: string;
-      cleanerId: string;
-    }) =>
-      apiClient.patch(`/admin/orders/${orderId}/assign-cleaner`, { cleanerId }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "orders"] });
-      setShowAssignModal(false);
-      setSelectedOrderId(undefined);
-    },
-  });
-
-  const cancelMutation = useMutation({
-    mutationFn: (orderId: string) =>
-      apiClient.patch(`/admin/orders/${orderId}/cancel`, {
-        reason: "Cancelled by admin",
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "orders"] });
-    },
-  });
-
-  const statusColors: any = {
-    PENDING: "bg-gray-100 text-gray-800",
-    ASSIGNED: "bg-blue-100 text-blue-800",
-    ACCEPTED: "bg-indigo-100 text-indigo-800",
-    IN_PROGRESS: "bg-yellow-100 text-yellow-800",
-    COMPLETED: "bg-green-100 text-green-800",
-    CANCELLED: "bg-red-100 text-red-800",
+  const runAction = async (fn: () => Promise<unknown>) => {
+    setError("");
+    try {
+      await fn();
+      refetch();
+    } catch (err) {
+      setError(getApiErrorMessage(err));
+    }
   };
 
-  const statusOptions = [
-    "PENDING",
-    "ASSIGNED",
-    "ACCEPTED",
-    "IN_PROGRESS",
-    "COMPLETED",
-    "CANCELLED",
-  ];
-
   return (
-    <div className="container mx-auto px-4 py-8">
-      <button
-        onClick={() => router.back()}
-        className="text-blue-600 hover:underline mb-4 inline-block"
-      >
-        ← Back
-      </button>
-      <h1 className="text-3xl font-bold mb-6">Order Management</h1>
+    <div>
+      <PageHeader title={t("admin.orders.title")} />
 
-      <div className="mb-6 flex gap-2 flex-wrap">
-        <button
-          onClick={() => setStatus(undefined)}
-          className={`px-4 py-2 rounded-lg transition ${
-            !status
-              ? "bg-gray-800 text-white"
-              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-          }`}
-        >
-          All
-        </button>
-        {statusOptions.map((s) => (
-          <button
-            key={s}
-            onClick={() => setStatus(s)}
-            className={`px-4 py-2 rounded-lg transition ${
-              status === s
-                ? "bg-gray-800 text-white"
-                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-            }`}
-          >
-            {s}
-          </button>
-        ))}
-      </div>
-
-      {ordersLoading && (
-        <div className="text-center py-8">Loading orders...</div>
+      {error && (
+        <div className="mb-4 p-3 rounded-lg bg-red-50 text-red-700 text-sm">{error}</div>
       )}
 
-      {orders?.orders && orders.orders.length === 0 && (
-        <div className="text-center py-8 text-gray-600">No orders found</div>
-      )}
+      <FormField label={t("common.filter")} className="max-w-xs mb-4">
+        <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <option value="">{t("common.all")}</option>
+          {STATUS_OPTIONS.map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </Select>
+      </FormField>
 
-      {orders?.orders && orders.orders.length > 0 && (
-        <div className="overflow-x-auto border rounded-lg">
-          <table className="w-full">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="px-4 py-2 text-left">Address</th>
-                <th className="px-4 py-2 text-left">Date</th>
-                <th className="px-4 py-2 text-left">Status</th>
-                <th className="px-4 py-2 text-left">Cleaner</th>
-                <th className="px-4 py-2 text-left">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.orders.map((order: any) => (
-                <tr key={order._id} className="border-t hover:bg-gray-50">
-                  <td className="px-4 py-3">{order.address}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">
-                    {new Date(order.scheduledDate).toLocaleDateString()}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                        statusColors[order.status]
-                      }`}
-                    >
-                      {order.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    {order.cleanerId ? "Assigned" : "Unassigned"}
-                  </td>
-                  <td className="px-4 py-3 flex gap-2">
-                    <button
-                      onClick={() => {
-                        setSelectedOrderId(order._id);
-                        setShowAssignModal(true);
-                      }}
-                      disabled={
-                        order.status === "COMPLETED" ||
-                        order.status === "CANCELLED"
-                      }
-                      className="px-2 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:bg-gray-400 transition"
-                    >
-                      Assign
-                    </button>
-                    <button
-                      onClick={() => cancelMutation.mutate(order._id)}
-                      disabled={
-                        order.status === "COMPLETED" ||
-                        order.status === "CANCELLED"
-                      }
-                      className="px-2 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 disabled:bg-gray-400 transition"
-                    >
-                      Cancel
-                    </button>
-                  </td>
-                </tr>
+      {isLoading ? (
+        <p className="flex items-center gap-2">
+          <Loader2 className="w-5 h-5 animate-spin" /> {t("common.loading")}
+        </p>
+      ) : (
+        <div>
+          <div className="lg:col-span-2">
+            <DataTable headers={["Mã", "Địa chỉ", "Ngày", "Trạng thái", "Thao tác"]}>
+              {orders.map((o) => (
+                <TableRow key={o._id}>
+                  <TableCell>#{orderIdShort(o._id)}</TableCell>
+                  <TableCell className="max-w-[200px] truncate">{o.address}</TableCell>
+                  <TableCell>{formatOrderDate(o.scheduledDate)}</TableCell>
+                  <TableCell>
+                    <OrderStatusBadge status={o.status as OrderStatus} />
+                  </TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="sm" onClick={() => setSelectedOrder(o._id)}>
+                      {t("common.view")}
+                    </Button>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* Assign Modal */}
-      {showAssignModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h2 className="text-xl font-bold mb-4">Assign Cleaner</h2>
-            <select
-              value={selectedCleanerId}
-              onChange={(e) => setSelectedCleanerId(e.target.value)}
-              className="w-full border border-gray-300 rounded px-3 py-2 mb-4"
-            >
-              <option value="">Select a cleaner...</option>
-              {Array.isArray(cleaners)
-                ? cleaners.map((cleaner: any) => (
-                    <option key={cleaner._id} value={cleaner._id}>
-                      {cleaner.fullName} ({cleaner.email})
-                    </option>
-                  ))
-                : null}
-            </select>
-            <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  if (selectedOrderId && selectedCleanerId) {
-                    assignMutation.mutate({
-                      orderId: selectedOrderId,
-                      cleanerId: selectedCleanerId,
-                    });
-                  }
-                }}
-                disabled={!selectedCleanerId || assignMutation.isPending}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 transition"
-              >
-                {assignMutation.isPending ? "Assigning..." : "Assign"}
-              </button>
-              <button
-                onClick={() => setShowAssignModal(false)}
-                className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition"
-              >
-                Cancel
-              </button>
-            </div>
+            </DataTable>
+            {orders.length === 0 && (
+              <p className="text-[var(--color-text-muted)] mt-4">{t("common.noData")}</p>
+            )}
           </div>
+
+          {detail && (
+            <Card className="mt-6">
+              <h3 className="font-semibold mb-4">Chi tiết #{orderIdShort(detail._id)}</h3>
+              <div className="text-sm space-y-2 mb-4">
+                <p><strong>Địa chỉ:</strong> {detail.address}</p>
+                <p>
+                  <strong>Trạng thái:</strong>{" "}
+                  <OrderStatusBadge status={detail.status as OrderStatus} />
+                </p>
+                <p><strong>Tasks:</strong> {detail.tasks?.map((task) => task.taskName).join(", ")}</p>
+              </div>
+
+              <FormField label="Chọn nhân viên" className="mb-3">
+                <Select
+                  value={cleanerIdInput}
+                  onChange={(e) => setCleanerIdInput(e.target.value)}
+                >
+                  <option value="">— Chọn —</option>
+                  {cleaners
+                    .filter((c) => c.isActive)
+                    .map((c) => (
+                      <option key={c._id} value={c._id}>
+                        {c.fullName}
+                      </option>
+                    ))}
+                </Select>
+              </FormField>
+
+              <div className="flex flex-wrap gap-2">
+                {/* Assign cleaner to a PENDING order */}
+                {detail.status === "PENDING" && (
+                  <Button
+                    size="sm"
+                    disabled={!cleanerIdInput || assigning}
+                    onClick={() =>
+                      runAction(() =>
+                        assignCleaner({ orderId: detail._id, cleanerId: cleanerIdInput }),
+                      )
+                    }
+                  >
+                    {assigning ? t("common.loading") : t("admin.orders.assignCleaner")}
+                  </Button>
+                )}
+
+                {/* Reassign cleaner when order is CONFIRMED or ACCEPTED */}
+                {["CONFIRMED", "ACCEPTED"].includes(detail.status) && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={!cleanerIdInput || reassigning}
+                    onClick={() =>
+                      runAction(() =>
+                        reassignCleaner({ orderId: detail._id, cleanerId: cleanerIdInput }),
+                      )
+                    }
+                  >
+                    {reassigning ? t("common.loading") : t("admin.orders.reassignCleaner")}
+                  </Button>
+                )}
+
+                {/* Offline payment: confirm deposit received → CONFIRMED */}
+                {detail.status === "ON_HOLD_PAYMENT" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={confirmingDeposit}
+                    onClick={() => {
+                      if (!confirm("Xác nhận đã nhận đặt cọc offline cho đơn này?")) return;
+                      runAction(() => confirmDeposit(detail._id));
+                    }}
+                  >
+                    {confirmingDeposit ? t("common.loading") : "Xác nhận đặt cọc (offline)"}
+                  </Button>
+                )}
+
+                {/* Offline payment: confirm final payment received → COMPLETED */}
+                {detail.status === "PAYMENT_PENDING" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={confirmingFinal}
+                    onClick={() => {
+                      if (!confirm("Xác nhận đã nhận thanh toán cuối offline cho đơn này?")) return;
+                      runAction(() => confirmFinalPayment(detail._id));
+                    }}
+                  >
+                    {confirmingFinal ? t("common.loading") : "Xác nhận thanh toán cuối (offline)"}
+                  </Button>
+                )}
+
+                {/* Cancel — not allowed once order is COMPLETED or already CANCELLED */}
+                {detail.status !== "COMPLETED" && detail.status !== "CANCELLED" && (
+                  <Button
+                    size="sm"
+                    variant="danger"
+                    disabled={cancelling}
+                    onClick={() => {
+                      if (!confirm("Hủy đơn này?")) return;
+                      runAction(() => cancelOrder({ orderId: detail._id, reason: "Admin hủy" }));
+                    }}
+                  >
+                    {cancelling ? t("common.loading") : t("admin.orders.cancelOrder")}
+                  </Button>
+                )}
+              </div>
+            </Card>
+          )}
         </div>
       )}
     </div>

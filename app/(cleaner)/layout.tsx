@@ -1,18 +1,24 @@
-export default function CleanerLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+"use client";
+
+import { PortalLayout } from "@/components/layout/PortalLayout";
+import { cleanerNav } from "@/lib/navigation";
+import { t } from "@/lib/i18n";
+import { useAuthStore } from "@/hooks/useAuth";
+import { useUser } from "@/hooks/useApi";
+
+export default function CleanerLayout({ children }: { children: React.ReactNode }) {
+  const { data: user } = useUser();
+  const storeUser = useAuthStore((s) => s.user);
+  const displayName = user?.fullName ?? storeUser?.fullName ?? "Nhân viên dọn";
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow">
-        <div className="container mx-auto px-4 py-4">
-          <h1 className="text-2xl font-bold text-gray-900">
-            Cleaner Dashboard
-          </h1>
-        </div>
-      </nav>
-      <div className="container mx-auto px-4 py-8">{children}</div>
-    </div>
+    <PortalLayout
+      navItems={cleanerNav}
+      portalTitle={t("nav.cleaner.dashboard")}
+      variant="cleaner"
+      userName={displayName}
+    >
+      {children}
+    </PortalLayout>
   );
 }

@@ -1,104 +1,94 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Input, FormField } from "@/components/ui/Input";
+import { useAuth as useAuthApi } from "@/hooks/useApi";
 import { useAuthStore } from "@/hooks/useAuth";
-import { useAuth } from "@/hooks/useApi";
+import { t } from "@/lib/i18n";
+import { getDefaultRouteForRole } from "@/lib/navigation";
+import type { User } from "@/hooks/useAuth";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [formData, setFormData] = useState({ email: "", password: "" });
+  const { login, isLoading } = useAuthApi();
+  const setAuthSession = useAuthStore((state) => state.login);
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const { login, isLoading } = useAuth();
-  const { login: setAuthStore } = useAuthStore();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const getErrorMessage = (err: any) =>
+    err?.response?.data?.message || "Số điện thoại hoặc mật khẩu không đúng. Vui lòng thử lại.";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
     try {
-      const response = await login(formData);
-      const { accessToken, refreshToken, user } = response.data;
-      setAuthStore(user, accessToken, refreshToken);
-      router.push(`/${user.role}/dashboard`);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Login failed");
+      const response = await login({ phone, password });
+      const { user: rawUser, accessToken, refreshToken } = response.data as {
+        user: Record<string, unknown>;
+        accessToken: string;
+        refreshToken: string;
+      };
+
+      const user: User = {
+        ...(rawUser as unknown as User),
+        _id: String(rawUser._id ?? ""),
+      };
+
+      setAuthSession(user, accessToken, refreshToken);
+      router.push(getDefaultRouteForRole(user.role));
+    } catch (err) {
+      setError(getErrorMessage(err));
     }
   };
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold mb-6 text-center">Login</h1>
+    <Card padding="lg" className="shadow-[var(--shadow-lg)]">
+      <h1 className="text-2xl font-bold text-[var(--color-text)] mb-1">{t("auth.loginTitle")}</h1>
+      <p className="text-sm text-[var(--color-text-muted)] mb-6">{t("auth.hint")}</p>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit}>
-        <div className="mb-4">
-          <label className="block text-gray-700 font-semibold mb-2">
-            Email
-          </label>
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <FormField label={t("auth.phone")}>
+          <Input
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder={t("auth.phoneNumberPlaceholder")}
             required
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="your@email.com"
+            disabled={isLoading}
           />
-        </div>
-
-        <div className="mb-6">
-          <label className="block text-gray-700 font-semibold mb-2">
-            Password
-          </label>
-          <input
+        </FormField>
+        <FormField label={t("auth.password")}>
+          <Input
             type="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder={t("auth.passwordPlaceholder")}
             required
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="••••••••"
+            disabled={isLoading}
           />
-        </div>
-
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50"
-        >
-          {isLoading ? "Logging in..." : "Login"}
-        </button>
+        </FormField>
+        {error ? (
+          <p className="rounded-[var(--radius-md)] bg-[var(--color-danger)]/10 px-3 py-2 text-sm text-[var(--color-danger)]">
+            {error}
+          </p>
+        ) : null}
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading ? "Đang đăng nhập..." : t("common.login")}
+        </Button>
       </form>
 
-      <p className="text-center text-gray-600 mt-4">
-        Don't have an account?{" "}
-        <Link
-          href="/register"
-          className="text-blue-600 hover:underline font-semibold"
-        >
-          Register here
+      <p className="text-center text-sm text-[var(--color-text-secondary)] mt-6">
+        {t("auth.noAccount")}{" "}
+        <Link href="/register" className="text-[var(--color-primary)] font-medium hover:underline">
+          {t("common.register")}
         </Link>
       </p>
-
-      <p className="text-center text-gray-600 mt-2">
-        <Link
-          href="/forgot-password"
-          className="text-blue-600 hover:underline text-sm"
-        >
-          Forgot password?
-        </Link>
-      </p>
-    </div>
+    </Card>
   );
 }

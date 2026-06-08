@@ -1,98 +1,134 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/services/api-client";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { StatCard } from "@/components/shared/StatCard";
+import { Card } from "@/components/ui/Card";
+import { t } from "@/lib/i18n";
+import { useAdminDashboardStats, useAdminCleaners } from "@/hooks/useApi";
+import {
+  ClipboardList,
+  Users,
+  CheckCircle,
+  UserCircle,
+  Loader2,
+} from "lucide-react";
+import type { User } from "@/types";
 
-export default function AdminDashboard() {
-  const router = useRouter();
-  const { data: response, isLoading } = useQuery({
-    queryKey: ["admin", "dashboard", "stats"],
-    queryFn: async () => {
-      const response = await apiClient.get("/admin/dashboard/stats");
-      return response.data;
-    },
-  });
+const STATUS_LABELS = [
+  "PENDING",
+  "ON_HOLD_PAYMENT",
+  "CONFIRMED",
+  "ACCEPTED",
+  "IN_PROGRESS",
+  "REVIEW_PENDING",
+  "COMPLETED",
+  "CANCELLED",
+] as const;
 
-  if (isLoading)
+export default function AdminDashboardPage() {
+  const { data: stats, isLoading } = useAdminDashboardStats();
+  const { data: cleanersData } = useAdminCleaners(undefined, 1);
+
+  if (isLoading) {
     return (
-      <div className="text-center py-8 text-gray-600">Loading dashboard...</div>
+      <p className="flex items-center gap-2 py-12">
+        <Loader2 className="w-5 h-5 animate-spin" /> {t("common.loading")}
+      </p>
     );
+  }
+
+  const s = stats as Record<string, number> | undefined;
+  const totalOrders = s?.totalOrders ?? 0;
+  const completedOrders = s?.totalCompleted ?? 0;
+  const activeCleaners = s?.totalCleaners ?? 0;
+  const totalCustomers = s?.totalCustomers ?? 0;
+
+  const cleaners = ((cleanersData as { cleaners?: User[] })?.cleaners ??
+    []) as User[];
+  const topCleaners = [...cleaners].slice(0, 3);
+
+  const statusMap = Object.fromEntries(
+    (stats?.ordersByStatus ?? []).map((item: any) => [item.status, item.count]),
+  );
+
+  const ordersByStatus = STATUS_LABELS.map((status) => ({
+    status,
+    count: statusMap[status] ?? 0,
+  })).filter((item) => item.count > 0);
 
   return (
     <div>
-      <h2 className="text-3xl font-bold mb-8">Admin Dashboard</h2>
-
-      <div className="grid md:grid-cols-3 gap-4 mb-8">
-        <div className="bg-blue-50 border border-blue-200 p-6 rounded-lg">
-          <h3 className="text-3xl font-bold text-blue-600">
-            {response?.total || 0}
-          </h3>
-          <p className="text-gray-600">Total Orders</p>
-        </div>
-        <div className="bg-green-50 border border-green-200 p-6 rounded-lg">
-          <h3 className="text-3xl font-bold text-green-600">
-            {response?.COMPLETED || 0}
-          </h3>
-          <p className="text-gray-600">Completed Orders</p>
-        </div>
-        <div className="bg-yellow-50 border border-yellow-200 p-6 rounded-lg">
-          <h3 className="text-3xl font-bold text-yellow-600">
-            {response?.IN_PROGRESS || 0}
-          </h3>
-          <p className="text-gray-600">In Progress</p>
-        </div>
+      <PageHeader title={t("admin.dashboard.title")} />
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <StatCard
+          title={t("admin.dashboard.totalOrders")}
+          value={totalOrders}
+          icon={ClipboardList}
+        />
+        <StatCard
+          title={t("admin.dashboard.completedOrders")}
+          value={completedOrders}
+          icon={CheckCircle}
+          accent="success"
+        />
+        <StatCard
+          title={t("admin.dashboard.activeCleaners")}
+          value={activeCleaners}
+          icon={Users}
+          accent="info"
+        />
+        <StatCard
+          title="Khách hàng"
+          value={totalCustomers}
+          icon={UserCircle}
+          accent="primary"
+        />
       </div>
 
-      <div className="grid md:grid-cols-2 gap-4 mb-8">
-        <div className="bg-purple-50 border border-purple-200 p-6 rounded-lg">
-          <h3 className="text-2xl font-bold text-purple-600">
-            {response?.totalCustomers || 0}
-          </h3>
-          <p className="text-gray-600">Total Customers</p>
-        </div>
-        <div className="bg-indigo-50 border border-indigo-200 p-6 rounded-lg">
-          <h3 className="text-2xl font-bold text-indigo-600">
-            {response?.totalCleaners || 0}
-          </h3>
-          <p className="text-gray-600">Total Cleaners</p>
-        </div>
-      </div>
-
-      <h3 className="text-xl font-bold mb-4">Management</h3>
-      <div className="grid md:grid-cols-2 gap-6">
-        <Link
-          href="/admin/orders"
-          className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition border border-gray-200"
-        >
-          <h3 className="text-xl font-bold mb-2">📋 Manage Orders</h3>
-          <p className="text-gray-600">View all orders and assign cleaners</p>
-        </Link>
-
-        <Link
-          href="/admin/customers"
-          className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition border border-gray-200"
-        >
-          <h3 className="text-xl font-bold mb-2">👥 Customers</h3>
-          <p className="text-gray-600">Manage customer accounts</p>
-        </Link>
-
-        <Link
-          href="/admin/cleaners"
-          className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition border border-gray-200"
-        >
-          <h3 className="text-xl font-bold mb-2">🧹 Cleaners</h3>
-          <p className="text-gray-600">Manage cleaner accounts</p>
-        </Link>
-
-        <Link
-          href="/admin/tasks"
-          className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition border border-gray-200"
-        >
-          <h3 className="text-xl font-bold mb-2">⚙️ Task Catalog</h3>
-          <p className="text-gray-600">Manage cleaning tasks</p>
-        </Link>
+      <div className="grid lg:grid-cols-2 gap-6">
+        <Card>
+          <h2 className="font-semibold mb-4">
+            {t("admin.dashboard.ordersByStatus")}
+          </h2>
+          <div className="space-y-2">
+            {ordersByStatus.length === 0 ? (
+              <p className="text-sm text-[var(--color-text-muted)]">
+                {t("common.noData")}
+              </p>
+            ) : (
+              ordersByStatus.map((item) => (
+                <div key={item.status} className="flex justify-between text-sm">
+                  <span>{item.status}</span>
+                  <span className="font-medium">{item.count}</span>
+                </div>
+              ))
+            )}
+          </div>
+        </Card>
+        <Card>
+          <h2 className="font-semibold mb-4">
+            {t("admin.dashboard.topCleaners")}
+          </h2>
+          {topCleaners.length === 0 ? (
+            <p className="text-sm text-[var(--color-text-muted)]">
+              {t("common.noData")}
+            </p>
+          ) : (
+            topCleaners.map((c, i) => (
+              <div
+                key={c._id}
+                className="flex justify-between py-2 border-b border-[var(--color-border)] last:border-0"
+              >
+                <span>
+                  {i + 1}. {c.fullName}
+                </span>
+                <span className="text-[var(--color-text-muted)] text-sm">
+                  {c.email}
+                </span>
+              </div>
+            ))
+          )}
+        </Card>
       </div>
     </div>
   );

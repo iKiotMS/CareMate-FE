@@ -1,247 +1,567 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { OrderStatusBadge } from "@/components/shared/OrderStatusBadge";
+import { Timeline } from "@/components/shared/Timeline";
+import { StarRating } from "@/components/shared/StarRating";
+import { PhotoGrid } from "@/components/shared/Charts";
+import { CountdownTimer } from "@/components/shared/CountdownTimer";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { Textarea, FormField } from "@/components/ui/Input";
+import { t } from "@/lib/i18n";
 import {
   useCustomerOrderDetail,
   useCancelOrder,
   useSubmitReview,
+  useDepositInfo,
+  useFinalPaymentInfo,
+  useOrderApplicants,
+  useSelectCleaner,
 } from "@/hooks/useApi";
+import { formatOrderDate } from "@/lib/format";
+import { getApiErrorMessage } from "@/lib/api-errors";
+import type { Order, OrderStatus } from "@/types";
+import { AlertCircle, Loader2, UserCheck } from "lucide-react";
 
-export default function OrderDetailPage({
+export default function CustomerOrderDetailPage({
   params,
 }: {
   params: { id: string };
 }) {
   const router = useRouter();
-  const { data: order, isLoading } = useCustomerOrderDetail(params.id);
-  const { mutateAsync: cancelOrder } = useCancelOrder();
-  const { mutateAsync: submitReview } = useSubmitReview();
+  const orderId = params.id;
 
-  const [showReviewForm, setShowReviewForm] = useState(false);
+  const {
+    data: orderRaw,
+    isLoading,
+    refetch,
+  } = useCustomerOrderDetail(orderId);
+  const { mutateAsync: cancelOrder, isPending: cancelling } = useCancelOrder();
+  const { mutateAsync: submitReview, isPending: reviewing } = useSubmitReview();
+  const { mutateAsync: selectCleaner, isPending: selecting } =
+    useSelectCleaner();
+
+  const order = orderRaw as Order | undefined;
+
+  // Conditionally fetch payment info
+  const { data: depositInfo } = useDepositInfo(
+    order?.status === "ON_HOLD_PAYMENT" ? orderId : "",
+  );
+  const { data: finalPaymentInfo } = useFinalPaymentInfo(
+    order?.status === "PAYMENT_PENDING" ? orderId : "",
+  );
+  const { data: applicantsRaw } = useOrderApplicants(
+    order?.status === "PENDING" ? orderId : "",
+  );
+
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showReview, setShowReview] = useState(false);
+  const [error, setError] = useState("");
 
-  const statusColors: any = {
-    PENDING: "bg-gray-100 text-gray-800",
-    ASSIGNED: "bg-blue-100 text-blue-800",
-    ACCEPTED: "bg-indigo-100 text-indigo-800",
-    IN_PROGRESS: "bg-yellow-100 text-yellow-800",
-    COMPLETED: "bg-green-100 text-green-800",
-    CANCELLED: "bg-red-100 text-red-800",
-  };
+  if (isLoading) {
+    return (
+      <p className="flex items-center gap-2 py-12">
+        <Loader2 className="w-5 h-5 animate-spin" /> {t("common.loading")}
+      </p>
+    );
+  }
+
+  if (!order) {
+    return (
+      <div className="text-center py-12 text-[var(--color-text-muted)]">
+        Không tìm thấy đơn hàng
+      </div>
+    );
+  }
+
+  const statusOrder = [
+    "PENDING",
+    "ON_HOLD_PAYMENT",
+    "CONFIRMED",
+    "ACCEPTED",
+    "IN_PROGRESS",
+    "REVIEW_PENDING",
+    "PAYMENT_PENDING",
+    "COMPLETED",
+  ];
+  const currentIdx = statusOrder.indexOf(order.status);
+
+  const timeline = [
+    {
+      key: "created",
+      label: "Đã đặt đơn",
+      date: order.createdAt ? formatOrderDate(order.createdAt) : undefined,
+      done: true,
+    },
+    {
+      key: "applicants",
+      label: "Chọn nhân viên",
+      done: currentIdx >= 1 || !!order.cleanerId || !!order.pendingCleanerId,
+    },
+    {
+      key: "deposit",
+      label: "Đặt cọc 30.000 ₫",
+      done: currentIdx >= 2,
+      active: order.status === "ON_HOLD_PAYMENT",
+    },
+    {
+      key: "confirmed",
+      label: "Đã xác nhận",
+      done: currentIdx >= 2,
+      active: order.status === "CONFIRMED",
+    },
+    {
+      key: "checkin",
+      label: "Nhân viên đến",
+      done: currentIdx >= 4,
+      active: order.status === "ACCEPTED",
+    },
+    {
+      key: "inprogress",
+      label: "Đang dọn",
+      done: currentIdx >= 5,
+      active: order.status === "IN_PROGRESS",
+    },
+    {
+      key: "review",
+      label: "Đánh giá",
+      done: currentIdx >= 7,
+      active: order.status === "REVIEW_PENDING",
+    },
+    {
+      key: "final_payment",
+      label: "Thanh toán cuối",
+      done: order.status === "COMPLETED",
+      active: order.status === "PAYMENT_PENDING",
+    },
+    {
+      key: "completed",
+      label: t("customer.timeline.completed"),
+      done: order.status === "COMPLETED",
+    },
+  ];
 
   const handleCancel = async () => {
-    if (!confirm("Are you sure you want to cancel this order?")) return;
+    if (!confirm("Bạn chắc chắn muốn hủy đơn?")) return;
+    setError("");
     try {
-      await cancelOrder({ orderId: params.id });
+      await cancelOrder({ orderId });
       router.push("/customer/orders");
-    } catch (error) {
-      alert("Failed to cancel order");
+    } catch (err) {
+      setError(getApiErrorMessage(err));
     }
   };
 
-  const handleSubmitReview = async (e: React.FormEvent) => {
+  const handleReview = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
+    setError("");
     try {
-      await submitReview({ orderId: params.id, rating, comment });
-      setShowReviewForm(false);
-      router.refresh();
-    } catch (error) {
-      alert("Failed to submit review");
-    } finally {
-      setIsSubmitting(false);
+      await submitReview({ orderId, rating, comment });
+      setShowReview(false);
+      refetch();
+    } catch (err) {
+      setError(getApiErrorMessage(err));
     }
   };
 
-  if (isLoading) return <div className="text-center py-8">Loading...</div>;
-  if (!order) return <div className="text-center py-8">Order not found</div>;
+  const handleSelectCleaner = async (cleanerId: string) => {
+    setError("");
+    try {
+      await selectCleaner({ orderId, cleanerId });
+      refetch();
+    } catch (err) {
+      setError(getApiErrorMessage(err));
+    }
+  };
+
+  const applicants = (applicantsRaw as any[]) ?? [];
+  const pendingApplicants = applicants.filter((a) => a.status === "PENDING");
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-3xl">
-      <button
-        onClick={() => router.back()}
-        className="text-blue-600 hover:underline mb-4"
+    <div>
+      <Link
+        href="/customer/orders"
+        className="text-sm text-[var(--color-primary)] hover:underline mb-4 inline-block"
       >
-        ← Back
-      </button>
+        ← {t("common.back")}
+      </Link>
 
-      <div className="bg-white border border-gray-300 rounded-lg p-6">
-        {/* Header */}
-        <div className="flex justify-between items-start mb-6">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">{order.address}</h1>
-            <p className="text-gray-600">
-              Order #{order._id.slice(-8)} • Created{" "}
-              {new Date(order.createdAt).toLocaleDateString()}
-            </p>
-          </div>
-          <span
-            className={`px-4 py-2 rounded-full font-semibold ${statusColors[order.status]}`}
-          >
-            {order.status}
-          </span>
+      {error && (
+        <div className="mb-4 p-3 rounded-lg bg-red-50 text-red-700 text-sm">
+          {error}
         </div>
+      )}
 
-        {/* Schedule */}
-        <div className="mb-6 pb-6 border-b">
-          <h2 className="font-semibold mb-3">Scheduled For</h2>
-          <p className="text-lg">
-            {new Date(order.scheduledDate).toLocaleDateString()} at{" "}
-            {order.scheduledTime}
-          </p>
-        </div>
+      <PageHeader
+        title={t("customer.orderDetail.title")}
+        subtitle={order.address}
+        action={<OrderStatusBadge status={order.status as OrderStatus} />}
+      />
 
-        {/* Tasks */}
-        <div className="mb-6 pb-6 border-b">
-          <h2 className="font-semibold mb-3">
-            Tasks ({order.tasks?.length || 0})
-          </h2>
-          <ul className="space-y-2">
-            {order.tasks?.map((task: any, idx: number) => (
-              <li key={idx} className="flex items-center text-gray-700">
-                <span
-                  className={`${task.isDone ? "line-through text-gray-400" : ""}`}
-                >
-                  {task.taskName}
-                </span>
-                {task.isDone && <span className="ml-2 text-green-600">✓</span>}
-              </li>
-            ))}
-          </ul>
-        </div>
+      <div className="grid lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          {/* Timeline */}
+          <Card>
+            <h2 className="font-semibold mb-4">
+              {t("customer.orderDetail.timeline")}
+            </h2>
+            <Timeline items={timeline} />
+          </Card>
 
-        {/* Photos */}
-        {order.photosBeforeBooking && order.photosBeforeBooking.length > 0 && (
-          <div className="mb-6 pb-6 border-b">
-            <h2 className="font-semibold mb-3">Before Cleaning Photos</h2>
-            <div className="grid grid-cols-3 gap-3">
-              {order.photosBeforeBooking.map((url: string, idx: number) => (
-                <img
-                  key={idx}
-                  src={url}
-                  alt="before"
-                  className="w-full h-32 object-cover rounded-lg"
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {order.photosAfter && order.photosAfter.length > 0 && (
-          <div className="mb-6 pb-6 border-b">
-            <h2 className="font-semibold mb-3">After Cleaning Photos</h2>
-            <div className="grid grid-cols-3 gap-3">
-              {order.photosAfter.map((url: string, idx: number) => (
-                <img
-                  key={idx}
-                  src={url}
-                  alt="after"
-                  className="w-full h-32 object-cover rounded-lg"
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Cleaner Info */}
-        {order.cleanerId && (
-          <div className="mb-6 pb-6 border-b">
-            <h2 className="font-semibold mb-2">Assigned Cleaner</h2>
-            <p className="text-gray-700">
-              (Cleaner name and details would appear here)
-            </p>
-          </div>
-        )}
-
-        {/* Notes */}
-        {order.note && (
-          <div className="mb-6 pb-6 border-b">
-            <h2 className="font-semibold mb-2">Special Instructions</h2>
-            <p className="text-gray-700">{order.note}</p>
-          </div>
-        )}
-
-        {/* Review Section */}
-        {order.status === "COMPLETED" && !order.rating && (
-          <div className="mb-6 pb-6 border-b bg-blue-50 p-4 rounded-lg">
-            {!showReviewForm ? (
-              <button
-                onClick={() => setShowReviewForm(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-              >
-                Leave a Review
-              </button>
-            ) : (
-              <form onSubmit={handleSubmitReview} className="space-y-3">
-                <div>
-                  <label className="block text-sm font-semibold mb-2">
-                    Rating *
-                  </label>
-                  <select
-                    value={rating}
-                    onChange={(e) => setRating(Number(e.target.value))}
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          {/* Applicants section — visible when PENDING and cleaners have applied */}
+          {order.status === "PENDING" && pendingApplicants.length > 0 && (
+            <Card>
+              <h2 className="font-semibold mb-4">
+                Nhân viên ứng tuyển ({pendingApplicants.length})
+              </h2>
+              <div className="space-y-3">
+                {pendingApplicants.map((applicant: any) => (
+                  <div
+                    key={applicant.cleanerId}
+                    className="flex items-center justify-between p-3 rounded-lg border border-[var(--color-border)]"
                   >
-                    <option value={5}>5 - Excellent</option>
-                    <option value={4}>4 - Good</option>
-                    <option value={3}>3 - Average</option>
-                    <option value={2}>2 - Poor</option>
-                    <option value={1}>1 - Very Poor</option>
-                  </select>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-[var(--color-primary-soft)] flex items-center justify-center text-[var(--color-primary)] font-medium text-sm shrink-0">
+                        {(applicant.cleanerName ?? "?").charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">
+                          {applicant.cleanerName ?? "Nhân viên"}
+                        </p>
+                        <p className="text-xs text-[var(--color-text-muted)]">
+                          {applicant.cleanerRating != null
+                            ? `★ ${Number(applicant.cleanerRating).toFixed(1)}`
+                            : "Chưa có đánh giá"}{" "}
+                          · {applicant.completedJobs ?? 0} đơn hoàn thành
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      disabled={selecting}
+                      onClick={() => handleSelectCleaner(applicant.cleanerId)}
+                    >
+                      {selecting ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <>
+                          <UserCheck className="w-3 h-3 mr-1" />
+                          Chọn
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+
+          {order.status === "PENDING" && pendingApplicants.length === 0 && (
+            <div className="rounded-xl border border-[var(--color-border)] p-4 text-sm text-[var(--color-text-muted)] text-center">
+              Đang chờ nhân viên ứng tuyển... Bạn sẽ nhận được thông báo khi có
+              ứng viên.
+            </div>
+          )}
+
+          {/* Deposit QR — ON_HOLD_PAYMENT */}
+          {order.status === "ON_HOLD_PAYMENT" && depositInfo && (
+            <Card className="border-amber-300 bg-amber-50 dark:bg-amber-950/20">
+              <div className="flex items-center gap-2 mb-3">
+                <AlertCircle className="w-5 h-5 text-amber-600" />
+                <h2 className="font-semibold">Đặt cọc để xác nhận đơn</h2>
+              </div>
+              <CountdownTimer expiresAt={(depositInfo as any).expiresAt} />
+              <div className="mt-4 text-center">
+                <img
+                  src={(depositInfo as any).qrDataUrl}
+                  alt="QR đặt cọc"
+                  className="mx-auto w-52 h-52 rounded-xl border"
+                />
+              </div>
+              <div className="mt-4 space-y-2 text-sm bg-white dark:bg-gray-900 rounded-lg p-4">
+                <div className="flex justify-between">
+                  <span className="text-[var(--color-text-muted)]">
+                    Số tiền đặt cọc
+                  </span>
+                  <span className="font-bold text-[var(--color-primary)]">
+                    {Number((depositInfo as any).amount)} ₫
+                  </span>
                 </div>
-                <div>
-                  <label className="block text-sm font-semibold mb-2">
-                    Comment (Optional)
-                  </label>
-                  <textarea
+                <div className="flex justify-between">
+                  <span className="text-[var(--color-text-muted)]">
+                    Ngân hàng
+                  </span>
+                  <span>{(depositInfo as any).bankName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[var(--color-text-muted)]">
+                    Số tài khoản
+                  </span>
+                  <span className="font-mono">
+                    {(depositInfo as any).accountNumber}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[var(--color-text-muted)]">
+                    Tên tài khoản
+                  </span>
+                  <span>{(depositInfo as any).accountName}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[var(--color-text-muted)]">
+                    Nội dung CK
+                  </span>
+                  <code className="font-bold text-[var(--color-primary)] bg-[var(--color-primary-soft)] px-2 py-0.5 rounded">
+                    {(depositInfo as any).content}
+                  </code>
+                </div>
+              </div>
+              <p className="text-xs text-[var(--color-text-muted)] mt-3 text-center">
+                Đơn sẽ tự động xác nhận sau khi nhận được thanh toán.
+              </p>
+            </Card>
+          )}
+
+          {/* Final payment QR — PAYMENT_PENDING */}
+          {order.status === "PAYMENT_PENDING" && finalPaymentInfo && (
+            <Card className="border-blue-300 bg-blue-50 dark:bg-blue-950/20">
+              <h2 className="font-semibold mb-3">Thanh toán phần còn lại</h2>
+              <div className="mb-4 space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-[var(--color-text-muted)]">
+                    Tổng dịch vụ
+                  </span>
+                  <span>
+                    {Number((finalPaymentInfo as any).originalTotal)} ₫
+                  </span>
+                </div>
+                <div className="flex justify-between text-green-700">
+                  <span>Đã đặt cọc</span>
+                  <span>
+                    − {Number((finalPaymentInfo as any).depositPaid)} ₫
+                  </span>
+                </div>
+                <div className="flex justify-between font-bold text-base border-t pt-2">
+                  <span>Còn lại</span>
+                  <span className="text-[var(--color-primary)]">
+                    {Number((finalPaymentInfo as any).amount)} ₫
+                  </span>
+                </div>
+              </div>
+              <div className="text-center">
+                <img
+                  src={(finalPaymentInfo as any).qrDataUrl}
+                  alt="QR thanh toán cuối"
+                  className="mx-auto w-52 h-52 rounded-xl border"
+                />
+              </div>
+              <div className="mt-4 space-y-2 text-sm bg-white dark:bg-gray-900 rounded-lg p-4">
+                <div className="flex justify-between">
+                  <span className="text-[var(--color-text-muted)]">
+                    Ngân hàng
+                  </span>
+                  <span>{(finalPaymentInfo as any).bankName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[var(--color-text-muted)]">
+                    Số tài khoản
+                  </span>
+                  <span className="font-mono">
+                    {(finalPaymentInfo as any).accountNumber}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[var(--color-text-muted)]">
+                    Nội dung CK
+                  </span>
+                  <code className="font-bold text-[var(--color-primary)] bg-[var(--color-primary-soft)] px-2 py-0.5 rounded">
+                    {(finalPaymentInfo as any).content}
+                  </code>
+                </div>
+              </div>
+              <CountdownTimer
+                expiresAt={(finalPaymentInfo as any).expiresAt}
+                label="Hết hạn thanh toán sau"
+              />
+            </Card>
+          )}
+
+          {/* Tasks */}
+          <Card>
+            <h2 className="font-semibold mb-4">
+              {t("customer.orderDetail.tasks")}
+            </h2>
+            <ul className="space-y-2">
+              {order.tasks?.map((task, i) => (
+                <li key={i} className="flex items-center gap-2 text-sm">
+                  <span className="w-5 h-5 rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center text-xs">
+                    {i + 1}
+                  </span>
+                  {task.taskName}
+                  {task.isDone && <Badge variant="success">✓</Badge>}
+                </li>
+              ))}
+            </ul>
+          </Card>
+
+          {(order.photosBeforeBooking?.length ?? 0) > 0 && (
+            <Card>
+              <h2 className="font-semibold mb-3">
+                {t("customer.orderDetail.photosBefore")}
+              </h2>
+              <PhotoGrid photos={order.photosBeforeBooking} />
+            </Card>
+          )}
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-4">
+          <Card>
+            <p className="text-sm text-[var(--color-text-muted)]">
+              {t("customer.orders.date")}
+            </p>
+            <p className="font-medium">
+              {formatOrderDate(order.scheduledDate)} · {order.scheduledTime}
+            </p>
+            <p className="text-sm text-[var(--color-text-muted)] mt-3">
+              {t("customer.orders.cleaner")}
+            </p>
+            <p className="font-medium">
+              {order.cleanerName
+                ? order.cleanerName
+                : order.status === "PENDING"
+                  ? t("customer.orders.notAssigned")
+                  : order.status === "ON_HOLD_PAYMENT"
+                    ? "Đang chờ xác nhận thanh toán"
+                    : t("customer.orders.notAssigned")}
+            </p>
+            {order.status === "PENDING" && (
+              <p className="text-xs text-amber-600 mt-2">
+                {pendingApplicants.length > 0
+                  ? `${pendingApplicants.length} nhân viên đã ứng tuyển — hãy chọn 1 người`
+                  : "Đang chờ nhân viên ứng tuyển..."}
+              </p>
+            )}
+            {order.note && (
+              <p className="text-sm mt-3 text-[var(--color-text-secondary)]">
+                {order.note}
+              </p>
+            )}
+          </Card>
+
+          {/* Total */}
+          <Card>
+            <p className="text-sm text-[var(--color-text-muted)]">Tổng tiền</p>
+            <p className="text-xl font-bold text-[var(--color-primary)]">
+              {order.totalAmount} ₫
+            </p>
+            {[
+              "ON_HOLD_PAYMENT",
+              "CONFIRMED",
+              "ACCEPTED",
+              "IN_PROGRESS",
+              "REVIEW_PENDING",
+              "PAYMENT_PENDING",
+            ].includes(order.status) && (
+              <div className="mt-2 space-y-1 text-xs text-[var(--color-text-muted)]">
+                <div className="flex justify-between">
+                  <span>Đặt cọc</span>
+                  <span
+                    className={
+                      order.status !== "ON_HOLD_PAYMENT" ? "text-green-600" : ""
+                    }
+                  >
+                    30.000 ₫{" "}
+                    {order.status !== "ON_HOLD_PAYMENT" ? "✓" : "(chờ)"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Còn lại</span>
+                  <span
+                    className={
+                      order.status === "COMPLETED" ? "text-green-600" : ""
+                    }
+                  >
+                    {Math.max(0, order.totalAmount - 30000).toLocaleString("vi-VN")} ₫{" "}
+                    {order.status === "COMPLETED" ? "✓" : ""}
+                  </span>
+                </div>
+              </div>
+            )}
+          </Card>
+
+          {/* Cancel button */}
+          {["PENDING", "ON_HOLD_PAYMENT"].includes(order.status) && (
+            <Button
+              variant="danger"
+              className="w-full"
+              onClick={handleCancel}
+              disabled={cancelling}
+            >
+              {cancelling
+                ? t("common.loading")
+                : t("customer.orderDetail.cancelOrder")}
+            </Button>
+          )}
+
+          {/* Review section */}
+          {order.status === "REVIEW_PENDING" &&
+            !order.rating &&
+            !showReview && (
+              <div className="rounded-xl border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/5 p-4">
+                <h3 className="font-semibold text-[var(--color-text)] mb-3">
+                  Đánh giá dịch vụ
+                </h3>
+                <p className="text-sm text-[var(--color-text-muted)] mb-3">
+                  Đánh giá để tiến hành thanh toán phần còn lại.
+                </p>
+                <Button className="w-full" onClick={() => setShowReview(true)}>
+                  {t("customer.orderDetail.writeReview")}
+                </Button>
+              </div>
+            )}
+
+          {showReview && (
+            <Card>
+              <form onSubmit={handleReview}>
+                <FormField label={t("customer.reviews.rating")}>
+                  <StarRating value={rating} onChange={setRating} />
+                </FormField>
+                <FormField label={t("customer.reviews.comment")}>
+                  <Textarea
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
-                    placeholder="Share your experience..."
-                    rows={3}
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 transition"
-                  >
-                    {isSubmitting ? "Submitting..." : "Submit Review"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowReviewForm(false)}
-                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition"
-                  >
-                    Cancel
-                  </button>
-                </div>
+                </FormField>
+                <Button
+                  type="submit"
+                  className="w-full mt-2"
+                  disabled={reviewing}
+                >
+                  {reviewing
+                    ? t("common.loading")
+                    : t("customer.reviews.submitReview")}
+                </Button>
               </form>
-            )}
-          </div>
-        )}
+            </Card>
+          )}
 
-        {order.rating && (
-          <div className="mb-6 pb-6 border-b bg-green-50 p-4 rounded-lg">
-            <h2 className="font-semibold mb-2">Your Review</h2>
-            <p className="mb-1">Rating: {"⭐".repeat(order.rating)}</p>
-            {order.review && <p className="text-gray-700">{order.review}</p>}
-          </div>
-        )}
-
-        {/* Actions */}
-        <div className="flex gap-3">
-          {order.status === "PENDING" && (
-            <button
-              onClick={handleCancel}
-              className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-            >
-              Cancel Order
-            </button>
+          {order.rating != null && (
+            <Card>
+              <p className="text-sm font-medium mb-2">Đánh giá của bạn</p>
+              <StarRating value={order.rating} readonly />
+              {order.review && (
+                <p className="text-sm text-[var(--color-text-secondary)] mt-2">
+                  {order.review}
+                </p>
+              )}
+            </Card>
           )}
         </div>
       </div>

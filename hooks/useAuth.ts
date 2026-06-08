@@ -3,11 +3,11 @@ import Cookies from "js-cookie";
 
 export interface User {
   _id: string;
-  email: string;
+  email?: string;
   fullName: string;
   role: "customer" | "cleaner" | "admin";
   avatarUrl?: string;
-  phone?: string;
+  phone: string;
   isActive: boolean;
 }
 

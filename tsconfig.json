@@ -32,11 +32,32 @@
       "@/services/*": [
         "./services/*"
       ],
+      "@/types": [
+        "./types/index.ts"
+      ],
       "@/types/*": [
         "./types/*"
       ],
       "@/utils/*": [
         "./utils/*"
+      ],
+      "@/lib": [
+        "./lib"
+      ],
+      "@/lib/*": [
+        "./lib/*"
+      ],
+      "@/data": [
+        "./data/mock.ts"
+      ],
+      "@/locales/*": [
+        "./locales/*"
+      ],
+      "@/data/*": [
+        "./data/*"
+      ],
+      "@/styles/*": [
+        "./styles/*"
       ]
     },
     "allowJs": true,

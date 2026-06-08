@@ -1,47 +1,42 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { SimpleStatCard } from "@/components/shared/StatCard";
+import { t } from "@/lib/i18n";
+import { useAvailableOrders, useCleanerJobs } from "@/hooks/useApi";
+import { Loader2 } from "lucide-react";
 
-export default function CleanerDashboard() {
-  const router = useRouter();
+export default function CleanerDashboardPage() {
+  const { data: availableRaw, isLoading: loadingAvailable } = useAvailableOrders();
+  const { data: jobsRaw, isLoading: loadingJobs } = useCleanerJobs();
+
+  const availableCount = Array.isArray(availableRaw) ? availableRaw.length : 0;
+  const jobs = Array.isArray(jobsRaw) ? jobsRaw : [];
+  const today = new Date().toISOString().split("T")[0];
+  const todayJobs = jobs.filter((j: { scheduledDate: string }) =>
+    new Date(j.scheduledDate).toISOString().startsWith(today),
+  ).length;
+
+  const loading = loadingAvailable || loadingJobs;
+
   return (
     <div>
-      <h2 className="text-3xl font-bold mb-8">Welcome to Your Dashboard</h2>
+      <PageHeader title={t("cleaner.dashboard.title")} />
 
-      <div className="grid md:grid-cols-3 gap-6">
-        <Link
-          href="/cleaner/available-orders"
-          className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition"
-        >
-          <h3 className="text-xl font-bold mb-2">🔍 Available Orders</h3>
-          <p className="text-gray-600">Browse and apply for new jobs</p>
-        </Link>
-
-        <Link
-          href="/cleaner/jobs"
-          className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition"
-        >
-          <h3 className="text-xl font-bold mb-2">🔧 My Jobs</h3>
-          <p className="text-gray-600">View assigned cleaning jobs</p>
-        </Link>
-
-        <Link
-          href="/cleaner/work-history"
-          className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition"
-        >
-          <h3 className="text-xl font-bold mb-2">📊 Work History</h3>
-          <p className="text-gray-600">View completed orders and reviews</p>
-        </Link>
-
-        <Link
-          href="/cleaner/profile"
-          className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition"
-        >
-          <h3 className="text-xl font-bold mb-2">👤 My Profile</h3>
-          <p className="text-gray-600">Update your profile information</p>
-        </Link>
-      </div>
+      {loading ? (
+        <p className="flex items-center gap-2">
+          <Loader2 className="w-5 h-5 animate-spin" /> {t("common.loading")}
+        </p>
+      ) : (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Link href="/cleaner/available-jobs">
+            <SimpleStatCard title={t("cleaner.dashboard.availableJobs")} value={availableCount} />
+          </Link>
+          <SimpleStatCard title={t("cleaner.dashboard.todayJobs")} value={todayJobs} />
+          <SimpleStatCard title="Việc đang giao" value={jobs.length} />
+        </div>
+      )}
     </div>
   );
 }
