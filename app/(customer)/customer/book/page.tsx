@@ -42,6 +42,19 @@ export default function BookCleaningPage() {
     taskIds: [] as string[],
   });
 
+  useEffect(() => {
+    if (!form.time || !form.date) return;
+    const today = new Date().toISOString().split("T")[0];
+    if (form.date !== today) return;
+    const startTime = form.time.split(" - ")[0];
+    const [hours, minutes] = startTime.split(":").map(Number);
+    const slotStart = new Date();
+    slotStart.setHours(hours, minutes, 0, 0);
+    if (slotStart.getTime() < Date.now() + 60 * 60 * 1000) {
+      setForm((f) => ({ ...f, time: "" }));
+    }
+  }, [form.date]);
+
   const { data: tasksRaw, isLoading: tasksLoading } = useTaskCatalog(true);
   const { mutateAsync: createOrder, isPending: creating } = useCreateOrder();
   const { mutateAsync: uploadPhotos, isPending: uploading } = useUploadPhotos();
@@ -58,6 +71,17 @@ export default function BookCleaningPage() {
     { id: 3, label: t("customer.book.step3") },
     { id: 4, label: t("customer.book.step4") },
   ];
+
+  const isSlotUnavailable = (slot: string): boolean => {
+    if (!form.date) return false;
+    const today = new Date().toISOString().split("T")[0];
+    if (form.date !== today) return false;
+    const startTime = slot.split(" - ")[0];
+    const [hours, minutes] = startTime.split(":").map(Number);
+    const slotStart = new Date();
+    slotStart.setHours(hours, minutes, 0, 0);
+    return slotStart.getTime() < Date.now() + 60 * 60 * 1000;
+  };
 
   const toggleTask = (id: string) => {
     setForm((f) => ({
@@ -162,11 +186,14 @@ export default function BookCleaningPage() {
                 onChange={(e) => setForm({ ...form, time: e.target.value })}
               >
                 <option value="">— Chọn khung giờ —</option>
-                {TIME_SLOTS.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
+                {TIME_SLOTS.map((s) => {
+                  const unavailable = isSlotUnavailable(s);
+                  return (
+                    <option key={s} value={s} disabled={unavailable}>
+                      {s}{unavailable ? " (Không còn khả dụng)" : ""}
+                    </option>
+                  );
+                })}
               </Select>
             </FormField>
             <FormField label={t("customer.book.address")}>
