@@ -15,10 +15,19 @@ export const useAuth = () => {
   const queryClient = useQueryClient();
 
   const loginMutation = useMutation({
-    mutationFn: (data: { phone: string; password: string }) =>
-      apiClient.post("/auth/login", data),
-    onSuccess: () => {
+    mutationFn: (data: { phone: string; password: string }) => {
+      console.log(`[AUTH HOOK] Login starting - phone: ${data.phone}`);
+      return apiClient.post("/auth/login", data).then((res) => {
+        console.log(`[AUTH HOOK] Login response received`);
+        return res;
+      });
+    },
+    onSuccess: (response) => {
+      console.log(`[AUTH HOOK] Login success, invalidating user query`);
       queryClient.invalidateQueries({ queryKey: ["user"] });
+    },
+    onError: (error) => {
+      console.log(`[AUTH HOOK] Login error:`, error);
     },
   });
 
@@ -28,12 +37,25 @@ export const useAuth = () => {
       password: string;
       fullName: string;
       email?: string;
-    }) => apiClient.post("/auth/register", data),
+    }) => {
+      console.log(
+        `[AUTH HOOK] Register starting - phone: ${data.phone}, name: ${data.fullName}`,
+      );
+      return apiClient.post("/auth/register", data).then((res) => {
+        console.log(`[AUTH HOOK] Register response received`);
+        return res;
+      });
+    },
+    onError: (error) => {
+      console.log(`[AUTH HOOK] Register error:`, error);
+    },
   });
 
   const forgotPasswordMutation = useMutation({
-    mutationFn: (email: string) =>
-      apiClient.post("/auth/forgot-password", { email }),
+    mutationFn: (email: string) => {
+      console.log(`[AUTH HOOK] Forgot password starting - email: ${email}`);
+      return apiClient.post("/auth/forgot-password", { email });
+    },
   });
 
   return {

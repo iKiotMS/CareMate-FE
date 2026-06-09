@@ -25,11 +25,15 @@ export const useAuthStore = create<AuthStore>((set) => ({
   accessToken: Cookies.get("accessToken") || null,
   isAuthenticated: !!Cookies.get("accessToken"),
   login: (user, accessToken, refreshToken) => {
+    console.log(`[AUTH STORE] Storing tokens for user: ${user._id}`);
     Cookies.set("accessToken", accessToken);
     Cookies.set("refreshToken", refreshToken);
+    console.log(`[AUTH STORE] Tokens stored in cookies`);
     set({ user, accessToken, isAuthenticated: true });
+    console.log(`[AUTH STORE] Auth state updated`);
   },
   logout: () => {
+    console.log(`[AUTH STORE] Logging out - clearing tokens`);
     Cookies.remove("accessToken");
     Cookies.remove("refreshToken");
     set({ user: null, accessToken: null, isAuthenticated: false });

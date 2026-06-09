@@ -7,7 +7,8 @@ class ApiClient {
   private baseURL: string;
 
   constructor() {
-    this.baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+    this.baseURL =
+      process.env.NEXT_PUBLIC_API_URL || "https://care-mate-be.vercel.app";
     this.client = axios.create({
       baseURL: this.baseURL,
       timeout: 10000,
@@ -25,30 +26,49 @@ class ApiClient {
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
+      console.log(
+        `[API] Request: ${config.method?.toUpperCase()} ${config.url}`,
+      );
+      if (config.data) {
+        console.log(
+          `[API] Body:`,
+          JSON.stringify(config.data).substring(0, 100),
+        );
+      }
       return config;
     });
 
     this.client.interceptors.response.use(
-      (response) => response,
+      (response) => {
+        console.log(
+          `[API] Response: ${response.status} ${response.config.url}`,
+        );
+        return response;
+      },
       async (error: AxiosError) => {
         const originalRequest = error.config as any;
+        console.log(`[API] Error: ${error.response?.status} ${error.message}`);
 
         // ── Token refresh on 401 ─────────────────────────────────────────────
         if (error.response?.status === 401 && !originalRequest._retry) {
+          console.log(`[API] 401 detected, attempting token refresh...`);
           originalRequest._retry = true;
 
           const refreshToken = Cookies.get("refreshToken");
           if (refreshToken) {
             try {
+              console.log(`[API] Calling /auth/refresh...`);
               const response = await this.client.post("/auth/refresh", {
                 refreshToken,
               });
               const newAccessToken = response.data.accessToken;
+              console.log(`[API] Token refreshed successfully`);
               Cookies.set("accessToken", newAccessToken);
 
               originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
               return this.client(originalRequest);
-            } catch {
+            } catch (refreshError) {
+              console.log(`[API] Token refresh failed, redirecting to login`);
               Cookies.remove("accessToken");
               Cookies.remove("refreshToken");
               window.location.href = "/login";
@@ -57,14 +77,18 @@ class ApiClient {
         }
 
         // ── Mock fallback for unimplemented BE endpoints ──────────────────────
-        // Triggered when BE returns 404 or the server is unreachable (network error).
-        // Once the real endpoint is live, it returns 200 and this block is skipped.
         const status = error.response?.status;
         const isNotFound = status === 404;
         const isServerError = status === 500;
         const isNetworkError = !error.response && error.code !== "ECONNABORTED";
 
-        if ((isNotFound || isServerError || isNetworkError) && !originalRequest._mocked) {
+        if (
+          (isNotFound || isServerError || isNetworkError) &&
+          !originalRequest._mocked
+        ) {
+          console.log(
+            `[API] Using mock response for ${originalRequest.method?.toUpperCase()} ${originalRequest.url}`,
+          );
           originalRequest._mocked = true;
 
           const mockData = resolveMock(
@@ -74,7 +98,9 @@ class ApiClient {
           );
 
           if (mockData !== null) {
-            console.info(`[mock] ${originalRequest.method?.toUpperCase()} ${originalRequest.url}`);
+            console.info(
+              `[mock] ${originalRequest.method?.toUpperCase()} ${originalRequest.url}`,
+            );
             return Promise.resolve({
               data: mockData,
               status: 200,
