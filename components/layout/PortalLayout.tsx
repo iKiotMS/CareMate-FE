@@ -131,11 +131,11 @@ export function PortalLayout({
       <div className="flex-1 flex flex-col min-w-0">
         <header className="sticky top-0 z-30 h-14 border-b border-[var(--color-border)] bg-[var(--color-bg-elevated)]/80 backdrop-blur-md flex items-center justify-between px-4 lg:px-6">
           <div className="flex items-center gap-3">
-            <button type="button" className="lg:hidden p-2" onClick={() => setSidebarOpen(true)}>
+            <button type="button" className="lg:hidden p-2.5 -ml-1 rounded-lg hover:bg-[var(--color-surface-hover)] transition-colors" onClick={() => setSidebarOpen(true)}>
               <Menu className="w-5 h-5" />
             </button>
             {sidebarOpen && (
-              <button type="button" className="lg:hidden p-2" onClick={() => setSidebarOpen(false)}>
+              <button type="button" className="lg:hidden p-2.5 -ml-1 rounded-lg hover:bg-[var(--color-surface-hover)] transition-colors" onClick={() => setSidebarOpen(false)}>
                 <X className="w-5 h-5" />
               </button>
             )}

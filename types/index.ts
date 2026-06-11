@@ -11,6 +11,13 @@ export type OrderStatus =
   | "COMPLETED"
   | "CANCELLED";
 
+export interface UserAddress {
+  _id: string;
+  label: string;
+  address: string;
+  isDefault: boolean;
+}
+
 export interface User {
   _id: string;
   email?: string;
@@ -18,6 +25,7 @@ export interface User {
   role: UserRole;
   phone: string;
   avatarUrl?: string | null;
+  addresses?: UserAddress[];
   isActive: boolean;
   rating?: number;
   completedJobs?: number;
@@ -32,6 +40,7 @@ export interface TaskCatalogItem {
   slug: string;
   description?: string;
   price: number;
+  pricePerM2: number;
   isActive: boolean;
   sortOrder: number;
 }
@@ -85,6 +94,7 @@ export interface Order {
   address: string;
   note?: string | null;
   tasks: OrderTask[];
+  areaM2?: number;
   photosBeforeBooking?: string[];
   photosCheckin?: string[];
   photosAfter?: string[];

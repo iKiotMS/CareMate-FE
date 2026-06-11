@@ -31,9 +31,9 @@ export default function AdminDashboardPage() {
 
   if (isLoading) {
     return (
-      <p className="flex items-center gap-2 py-12">
+      <div className="flex items-center gap-2 py-12">
         <Loader2 className="w-5 h-5 animate-spin" /> {t("common.loading")}
-      </p>
+      </div>
     );
   }
 

@@ -106,7 +106,16 @@ export default function CustomerOrdersPage() {
         }
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 mb-5">
+      {/* Mobile: 4 key stats */}
+      <div className="grid grid-cols-2 gap-2 mb-4 sm:hidden">
+        <StatusStat label="Tất cả" value={statusCounts.ALL ?? 0} icon={Clock3} active={filter === "ALL"} onClick={() => setFilter("ALL")} />
+        <StatusStat label={t("status.pending")} value={statusCounts.PENDING ?? 0} icon={Clock3} active={filter === "PENDING"} onClick={() => setFilter("PENDING")} />
+        <StatusStat label={t("status.inProgress")} value={statusCounts.IN_PROGRESS ?? 0} icon={Timer} active={filter === "IN_PROGRESS"} onClick={() => setFilter("IN_PROGRESS")} />
+        <StatusStat label={t("status.completed")} value={statusCounts.COMPLETED ?? 0} icon={CheckCircle2} active={filter === "COMPLETED"} onClick={() => setFilter("COMPLETED")} />
+      </div>
+
+      {/* Desktop: full stat grid */}
+      <div className="hidden sm:grid gap-3 sm:grid-cols-2 xl:grid-cols-4 mb-5">
         <StatusStat
           label="Tất cả"
           value={statusCounts.ALL ?? 0}
@@ -128,9 +137,9 @@ export default function CustomerOrdersPage() {
       <FilterTabs tabs={FILTERS} active={filter} onChange={setFilter} className="mb-5" />
 
       {isLoading ? (
-        <p className="flex items-center gap-2 text-[var(--color-text-muted)]">
+        <div className="flex items-center gap-2 text-[var(--color-text-muted)]">
           <Loader2 className="w-5 h-5 animate-spin" /> {t("common.loading")}
-        </p>
+        </div>
       ) : isError ? (
         <p className="text-red-600">
           Không tải được đơn hàng.{" "}
@@ -145,49 +154,75 @@ export default function CustomerOrdersPage() {
         </div>
       ) : (
         <>
-          <DataTable
-            headers={[
-              t("customer.orders.orderId"),
-              t("customer.orders.date"),
-              "Công việc",
-              t("customer.orders.status"),
-              t("customer.orders.cleaner"),
-              t("common.action"),
-            ]}
-          >
+          {/* Mobile: card list */}
+          <div className="sm:hidden space-y-3">
             {pageItems.map((o) => (
-              <TableRow key={o._id}>
-                <TableCell>
-                  <span className="font-mono text-xs">#{orderIdShort(o._id)}</span>
-                </TableCell>
-                <TableCell>
-                  <p className="font-medium">{formatOrderDate(o.scheduledDate)}</p>
-                  <span className="text-xs text-[var(--color-text-muted)]">{o.scheduledTime}</span>
-                </TableCell>
-                <TableCell>
-                  <p className="font-medium">{o.tasks?.length ?? 0} mục</p>
-                  <p className="text-xs text-[var(--color-text-muted)] max-w-[220px] truncate">
-                    {o.tasks?.map((task) => task.taskName).join(", ") || "Chưa có"}
+              <Link key={o._id} href={`/customer/orders/${o._id}`} className="block">
+                <div className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 hover:border-[var(--color-primary)]/40 transition-colors active:bg-[var(--color-surface-hover)]">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <span className="font-mono text-xs text-[var(--color-text-muted)]">#{orderIdShort(o._id)}</span>
+                    <OrderStatusBadge status={o.status as OrderStatus} />
+                  </div>
+                  <p className="font-medium text-sm text-[var(--color-text)]">
+                    {formatOrderDate(o.scheduledDate)} · {o.scheduledTime}
                   </p>
-                </TableCell>
-                <TableCell>
-                  <OrderStatusBadge status={o.status as OrderStatus} />
-                </TableCell>
-                <TableCell>
-                  {o.cleanerName || (o.cleanerId ? "Đang cập nhật tên" : t("customer.orders.notAssigned"))}
-                </TableCell>
-                <TableCell>
-                  <Link href={`/customer/orders/${o._id}`}>
-                    <Button variant="ghost" size="sm">{t("common.view")}</Button>
-                  </Link>
-                </TableCell>
-              </TableRow>
+                  <p className="text-xs text-[var(--color-text-muted)] mt-1 line-clamp-1">
+                    {o.tasks?.map((t) => t.taskName).join(", ") || "Chưa có công việc"}
+                  </p>
+                  <p className="text-xs text-[var(--color-text-secondary)] mt-1">
+                    {t("customer.orders.cleaner")}: {o.cleanerName || t("customer.orders.notAssigned")}
+                  </p>
+                </div>
+              </Link>
             ))}
-          </DataTable>
+          </div>
+
+          {/* Desktop: data table */}
+          <div className="hidden sm:block">
+            <DataTable
+              headers={[
+                t("customer.orders.orderId"),
+                t("customer.orders.date"),
+                "Công việc",
+                t("customer.orders.status"),
+                t("customer.orders.cleaner"),
+                t("common.action"),
+              ]}
+            >
+              {pageItems.map((o) => (
+                <TableRow key={o._id}>
+                  <TableCell>
+                    <span className="font-mono text-xs">#{orderIdShort(o._id)}</span>
+                  </TableCell>
+                  <TableCell>
+                    <p className="font-medium">{formatOrderDate(o.scheduledDate)}</p>
+                    <span className="text-xs text-[var(--color-text-muted)]">{o.scheduledTime}</span>
+                  </TableCell>
+                  <TableCell>
+                    <p className="font-medium">{o.tasks?.length ?? 0} mục</p>
+                    <p className="text-xs text-[var(--color-text-muted)] max-w-[200px] line-clamp-1">
+                      {o.tasks?.map((task) => task.taskName).join(", ") || "Chưa có"}
+                    </p>
+                  </TableCell>
+                  <TableCell>
+                    <OrderStatusBadge status={o.status as OrderStatus} />
+                  </TableCell>
+                  <TableCell>
+                    {o.cleanerName || (o.cleanerId ? "Đang cập nhật tên" : t("customer.orders.notAssigned"))}
+                  </TableCell>
+                  <TableCell>
+                    <Link href={`/customer/orders/${o._id}`}>
+                      <Button variant="ghost" size="sm">{t("common.view")}</Button>
+                    </Link>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </DataTable>
+          </div>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-4">
             <p className="text-sm text-[var(--color-text-muted)]">
-              Hiển thị {(page - 1) * PAGE_SIZE + 1}-{Math.min(page * PAGE_SIZE, list.length)} trên {list.length} đơn
+              Hiển thị {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, list.length)} trên {list.length} đơn
             </p>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>

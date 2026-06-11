@@ -90,9 +90,9 @@ export default function AvailableJobsPage() {
       </FormField>
 
       {isLoading ? (
-        <p className="flex items-center gap-2 text-[var(--color-text-muted)]">
+        <div className="flex items-center gap-2 text-[var(--color-text-muted)]">
           <Loader2 className="w-5 h-5 animate-spin" /> {t("common.loading")}
-        </p>
+        </div>
       ) : isError ? (
         <p className="text-red-600">Lỗi tải danh sách. Kiểm tra đăng nhập (cleaner) và API BE.</p>
       ) : filtered.length === 0 ? (

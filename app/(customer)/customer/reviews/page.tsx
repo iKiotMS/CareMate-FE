@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StarDisplay } from "@/components/shared/StarRating";
@@ -23,9 +24,9 @@ export default function CustomerReviewsPage() {
       <PageHeader title={t("customer.reviews.title")} subtitle={t("customer.reviews.subtitle")} />
 
       {isLoading ? (
-        <p className="flex items-center gap-2 py-8">
+        <div className="flex items-center gap-2 py-8">
           <Loader2 className="w-5 h-5 animate-spin" /> {t("common.loading")}
-        </p>
+        </div>
       ) : (
         <>
           {pending.length > 0 && (

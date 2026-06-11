@@ -13,16 +13,19 @@ import {
   useCreateOrder,
   useTaskCatalog,
   useUploadPhotos,
+  useUser,
 } from "@/hooks/useApi";
 import { getApiErrorMessage } from "@/lib/api-errors";
-import { Check, Upload, Loader2 } from "lucide-react";
+import { Check, Upload, Loader2, MapPin, Plus } from "lucide-react";
 import { cn } from "@/lib/cn";
+import type { UserAddress } from "@/types";
 
 interface TaskItem {
   _id: string;
   name: string;
   description?: string;
   price: number;
+  pricePerM2: number;
   isActive: boolean;
 }
 
@@ -31,6 +34,7 @@ export default function BookCleaningPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState(1);
   const [error, setError] = useState("");
+  const [today, setToday] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
@@ -40,7 +44,12 @@ export default function BookCleaningPage() {
     address: "",
     note: "",
     taskIds: [] as string[],
+    areaM2: "",
   });
+
+  useEffect(() => {
+    setToday(new Date().toISOString().split("T")[0]);
+  }, []);
 
   useEffect(() => {
     if (!form.time || !form.date) return;
@@ -58,12 +67,53 @@ export default function BookCleaningPage() {
   const { data: tasksRaw, isLoading: tasksLoading } = useTaskCatalog(true);
   const { mutateAsync: createOrder, isPending: creating } = useCreateOrder();
   const { mutateAsync: uploadPhotos, isPending: uploading } = useUploadPhotos();
+  const { data: userData } = useUser();
+
+  const savedAddresses: UserAddress[] = (userData as any)?.addresses ?? [];
+  const defaultAddress = savedAddresses.find((a) => a.isDefault) ?? savedAddresses[0] ?? null;
+
+  // pre-fill address from default on first load
+  const [addressPrefilled, setAddressPrefilled] = useState(false);
+  useEffect(() => {
+    if (!addressPrefilled && defaultAddress && !form.address) {
+      setForm((f) => ({ ...f, address: defaultAddress.address }));
+      setAddressPrefilled(true);
+    }
+  }, [defaultAddress, addressPrefilled, form.address]);
+
+  // track selected saved address id (null = custom manual input)
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [showManualInput, setShowManualInput] = useState(false);
+
+  // sync selectedAddressId once when user data loads
+  useEffect(() => {
+    if (defaultAddress) setSelectedAddressId(defaultAddress._id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultAddress?._id]);
+
+  const handleSelectSavedAddress = (addr: UserAddress) => {
+    setSelectedAddressId(addr._id);
+    setShowManualInput(false);
+    setForm((f) => ({ ...f, address: addr.address }));
+  };
+
+  const handleUseManual = () => {
+    setSelectedAddressId(null);
+    setShowManualInput(true);
+    setForm((f) => ({ ...f, address: "" }));
+  };
 
   const tasks: TaskItem[] = Array.isArray(tasksRaw) ? tasksRaw : [];
   const activeTasks = tasks.filter((task) => task.isActive);
   const selectedTasks = activeTasks.filter((task) =>
     form.taskIds.includes(task._id),
   );
+  const areaM2Num = parseFloat(form.areaM2) || 0;
+  const DEPOSIT_AMOUNT = 30_000;
+  const totalAmount = selectedTasks.reduce((sum, t) => {
+    const perM2 = t.pricePerM2 ?? 10000;
+    return sum + t.price + areaM2Num * perM2;
+  }, 0);
 
   const steps = [
     { id: 1, label: t("customer.book.step1") },
@@ -73,8 +123,7 @@ export default function BookCleaningPage() {
   ];
 
   const isSlotUnavailable = (slot: string): boolean => {
-    if (!form.date) return false;
-    const today = new Date().toISOString().split("T")[0];
+    if (!form.date || !today) return false;
     if (form.date !== today) return false;
     const startTime = slot.split(" - ")[0];
     const [hours, minutes] = startTime.split(":").map(Number);
@@ -94,7 +143,7 @@ export default function BookCleaningPage() {
 
   const canNext = () => {
     if (step === 1) return form.date && form.time && form.address.trim();
-    if (step === 2) return form.taskIds.length > 0;
+    if (step === 2) return form.taskIds.length > 0 && areaM2Num >= 1;
     return true;
   };
 
@@ -141,6 +190,7 @@ export default function BookCleaningPage() {
         address: form.address.trim(),
         note: form.note.trim() || undefined,
         taskIds: form.taskIds,
+        areaM2: areaM2Num,
         photosBeforeBooking: urls.length > 0 ? urls : undefined,
         paymentMethod: "BANK_TRANSFER",
       });
@@ -176,7 +226,7 @@ export default function BookCleaningPage() {
               <Input
                 type="date"
                 value={form.date}
-                min={new Date().toISOString().split("T")[0]}
+                min={today}
                 onChange={(e) => setForm({ ...form, date: e.target.value })}
               />
             </FormField>
@@ -196,13 +246,105 @@ export default function BookCleaningPage() {
                 })}
               </Select>
             </FormField>
-            <FormField label={t("customer.book.address")}>
-              <Input
-                value={form.address}
-                onChange={(e) => setForm({ ...form, address: e.target.value })}
-                placeholder="Số nhà, đường, quận, TP.HCM"
-              />
-            </FormField>
+            <div>
+              <p className="text-sm font-medium text-[var(--color-text)] mb-2">
+                {t("customer.book.address")}
+              </p>
+
+              {savedAddresses.length > 0 ? (
+                <div className="space-y-2">
+                  {savedAddresses.map((addr) => (
+                    <button
+                      key={addr._id}
+                      type="button"
+                      onClick={() => handleSelectSavedAddress(addr)}
+                      className={cn(
+                        "w-full text-left flex items-start gap-3 p-3 rounded-[var(--radius-lg)] border-2 transition-all",
+                        selectedAddressId === addr._id
+                          ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)]"
+                          : "border-[var(--color-border)] hover:border-[var(--color-primary)]/50",
+                      )}
+                    >
+                      <MapPin
+                        className={cn(
+                          "w-4 h-4 mt-0.5 shrink-0",
+                          selectedAddressId === addr._id
+                            ? "text-[var(--color-primary)]"
+                            : "text-[var(--color-text-muted)]",
+                        )}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-[var(--color-text)]">
+                            {addr.label || "Địa chỉ"}
+                          </span>
+                          {addr.isDefault && (
+                            <span className="text-xs px-1.5 py-0.5 rounded-full bg-[var(--color-primary)] text-white font-medium">
+                              Mặc định
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-[var(--color-text-secondary)] mt-0.5 line-clamp-2">
+                          {addr.address}
+                        </p>
+                      </div>
+                      {selectedAddressId === addr._id && (
+                        <Check className="w-4 h-4 text-[var(--color-primary)] shrink-0 mt-0.5" />
+                      )}
+                    </button>
+                  ))}
+
+                  {/* Nhập địa chỉ khác */}
+                  <button
+                    type="button"
+                    onClick={handleUseManual}
+                    className={cn(
+                      "w-full text-left flex items-center gap-3 p-3 rounded-[var(--radius-lg)] border-2 transition-all",
+                      showManualInput
+                        ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)]"
+                        : "border-dashed border-[var(--color-border)] hover:border-[var(--color-primary)]/50",
+                    )}
+                  >
+                    <Plus className="w-4 h-4 text-[var(--color-text-muted)] shrink-0" />
+                    <span className="text-sm text-[var(--color-text-secondary)]">
+                      Dùng địa chỉ khác
+                    </span>
+                  </button>
+
+                  {showManualInput && (
+                    <Input
+                      value={form.address}
+                      onChange={(e) => setForm({ ...form, address: e.target.value })}
+                      placeholder="Số nhà, đường, quận, TP.HCM"
+                      autoFocus
+                    />
+                  )}
+
+                  <p className="text-xs text-[var(--color-text-muted)]">
+                    Quản lý địa chỉ trong{" "}
+                    <a href="/customer/profile" className="text-[var(--color-primary)] underline">
+                      hồ sơ của bạn
+                    </a>
+                    .
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <Input
+                    value={form.address}
+                    onChange={(e) => setForm({ ...form, address: e.target.value })}
+                    placeholder="Số nhà, đường, quận, TP.HCM"
+                  />
+                  <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                    Lưu địa chỉ trong{" "}
+                    <a href="/customer/profile" className="text-[var(--color-primary)] underline">
+                      hồ sơ
+                    </a>{" "}
+                    để đặt đơn nhanh hơn lần sau.
+                  </p>
+                </>
+              )}
+            </div>
             <FormField label={t("customer.book.note")}>
               <Textarea
                 value={form.note}
@@ -215,10 +357,10 @@ export default function BookCleaningPage() {
         {step === 2 && (
           <div>
             {tasksLoading ? (
-              <p className="flex items-center gap-2 text-sm text-[var(--color-text-muted)]">
+              <div className="flex items-center gap-2 text-sm text-[var(--color-text-muted)]">
                 <Loader2 className="w-4 h-4 animate-spin" /> Đang tải danh mục
                 công việc...
-              </p>
+              </div>
             ) : activeTasks.length === 0 ? (
               <p className="text-sm text-amber-600">
                 Chưa có công việc. Khởi động BE để seed TaskCatalog.
@@ -231,6 +373,10 @@ export default function BookCleaningPage() {
                 <div className="grid sm:grid-cols-2 gap-3">
                   {activeTasks.map((task) => {
                     const selected = form.taskIds.includes(task._id);
+                    const perM2 = task.pricePerM2 ?? 10000;
+                    const taskTotal = areaM2Num > 0
+                      ? task.price + areaM2Num * perM2
+                      : null;
                     return (
                       <button
                         key={task._id}
@@ -243,23 +389,26 @@ export default function BookCleaningPage() {
                             : "border-[var(--color-border)] hover:border-[var(--color-primary)]/50",
                         )}
                       >
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <p className="font-medium text-[var(--color-text)]">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-[var(--color-text)] truncate">
                               {task.name}
                             </p>
                             {task.description && (
-                              <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                              <p className="text-xs text-[var(--color-text-muted)] mt-1 line-clamp-2">
                                 {task.description}
                               </p>
                             )}
+                            <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                              {task.price.toLocaleString("vi-VN")} ₫ + {perM2.toLocaleString("vi-VN")} ₫/m²
+                            </p>
                           </div>
                           <div className="flex flex-col items-end gap-1 shrink-0">
-                            {task.price > 0 && (
-                              <span className="text-xs font-medium text-[var(--color-text-secondary)]">
-                                {task.price} ₫
+                            {taskTotal !== null ? (
+                              <span className="text-sm font-semibold text-[var(--color-primary)] whitespace-nowrap">
+                                {taskTotal.toLocaleString("vi-VN")} ₫
                               </span>
-                            )}
+                            ) : null}
                             {selected && (
                               <Check className="w-5 h-5 text-[var(--color-primary)]" />
                             )}
@@ -270,25 +419,58 @@ export default function BookCleaningPage() {
                   })}
                 </div>
 
-                {selectedTasks.length > 0 && (
+                <div className="mt-5">
+                  <FormField label="Diện tích cần dọn dẹp (m²)">
+                    <Input
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={form.areaM2}
+                      onChange={(e) => setForm({ ...form, areaM2: e.target.value })}
+                      placeholder="Ví dụ: 50"
+                    />
+                    <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+                      Giá theo diện tích: 10.000 ₫/m² cho mỗi loại dịch vụ
+                    </p>
+                  </FormField>
+                </div>
+
+                {selectedTasks.length > 0 && areaM2Num >= 1 && (
                   <div className="mt-4 rounded-lg bg-[var(--color-primary)]/5 px-4 py-3 border border-[var(--color-primary)]/20 space-y-1">
-                    <div className="flex items-center justify-between">
+                    {selectedTasks.map((t) => {
+                      const perM2 = t.pricePerM2 ?? 10000;
+                      return (
+                        <div key={t._id} className="flex items-start justify-between gap-2 text-xs text-[var(--color-text-secondary)]">
+                          <span className="shrink-0 max-w-[45%] truncate">{t.name}</span>
+                          <span className="text-right">
+                            {(t.price + areaM2Num * perM2).toLocaleString("vi-VN")} ₫
+                          </span>
+                        </div>
+                      );
+                    })}
+                    <div className="border-t border-[var(--color-primary)]/20 pt-2 mt-2 flex items-center justify-between">
                       <span className="text-sm font-medium text-[var(--color-text)]">
                         Tổng tiền
                       </span>
                       <span className="text-lg font-bold text-[var(--color-primary)]">
-                        {150000} ₫
+                        {totalAmount.toLocaleString("vi-VN")} ₫
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-xs text-[var(--color-text-muted)]">
-                      <span>Đặt cọc</span>
-                      <span>30.000 ₫</span>
+                      <span>Đặt cọc ngay</span>
+                      <span>{DEPOSIT_AMOUNT.toLocaleString("vi-VN")} ₫</span>
                     </div>
                     <div className="flex items-center justify-between text-xs text-[var(--color-text-muted)]">
                       <span>Còn lại sau khi hoàn thành dịch vụ</span>
-                      <span>{Math.max(0, 150000 - 30000).toLocaleString("vi-VN")} ₫</span>
+                      <span>{Math.max(0, totalAmount - DEPOSIT_AMOUNT).toLocaleString("vi-VN")} ₫</span>
                     </div>
                   </div>
+                )}
+
+                {selectedTasks.length > 0 && areaM2Num < 1 && (
+                  <p className="mt-3 text-xs text-amber-600">
+                    Vui lòng nhập diện tích để xem tổng tiền.
+                  </p>
                 )}
               </>
             )}
@@ -311,7 +493,7 @@ export default function BookCleaningPage() {
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="w-full border-2 border-dashed border-[var(--color-border)] rounded-[var(--radius-xl)] p-12 text-center hover:border-[var(--color-primary)] transition-colors"
+              className="w-full border-2 border-dashed border-[var(--color-border)] rounded-[var(--radius-xl)] p-6 sm:p-12 text-center hover:border-[var(--color-primary)] transition-colors"
             >
               <Upload className="w-10 h-10 mx-auto text-[var(--color-text-muted)] mb-3" />
               <p className="text-sm text-[var(--color-text-secondary)]">
@@ -339,7 +521,7 @@ export default function BookCleaningPage() {
                     <button
                       type="button"
                       onClick={() => removeSelectedFile(i)}
-                      className="absolute top-1 right-1 bg-white/80 rounded-full p-1 text-xs"
+                      className="absolute top-1 right-1 bg-white/80 dark:bg-gray-800/80 rounded-full p-2 text-xs leading-none"
                       aria-label="Remove photo"
                     >
                       ✕
@@ -384,18 +566,40 @@ export default function BookCleaningPage() {
                 <strong>{t("customer.book.address")}:</strong> {form.address}
               </p>
               <p>
+                <strong>Diện tích:</strong> {areaM2Num} m²
+              </p>
+              <p>
                 <strong>{t("customer.book.totalTasks")}:</strong>{" "}
                 {selectedTasks.length}
               </p>
               <ul className="list-disc list-inside text-[var(--color-text-secondary)]">
-                {selectedTasks.map((task) => (
-                  <li key={task._id}>{task.name}</li>
-                ))}
+                {selectedTasks.map((task) => {
+                  const perM2 = task.pricePerM2 ?? 10000;
+                  return (
+                    <li key={task._id}>
+                      {task.name} — {(task.price + areaM2Num * perM2).toLocaleString("vi-VN")} ₫
+                    </li>
+                  );
+                })}
               </ul>
             </div>
-            <div className="mt-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 text-sm text-blue-800 dark:text-blue-300">
+            <div className="rounded-[var(--radius-lg)] bg-[var(--color-primary)]/5 px-4 py-3 border border-[var(--color-primary)]/20 space-y-1">
+              <div className="flex items-center justify-between text-sm font-semibold text-[var(--color-text)]">
+                <span>Tổng tiền</span>
+                <span className="text-[var(--color-primary)]">{totalAmount.toLocaleString("vi-VN")} ₫</span>
+              </div>
+              <div className="flex items-center justify-between text-xs text-[var(--color-text-muted)]">
+                <span>Đặt cọc ngay</span>
+                <span>{DEPOSIT_AMOUNT.toLocaleString("vi-VN")} ₫</span>
+              </div>
+              <div className="flex items-center justify-between text-xs text-[var(--color-text-muted)]">
+                <span>Thanh toán sau khi hoàn thành</span>
+                <span>{Math.max(0, totalAmount - DEPOSIT_AMOUNT).toLocaleString("vi-VN")} ₫</span>
+              </div>
+            </div>
+            <div className="mt-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 text-sm text-blue-800 dark:text-blue-300">
               Sau khi đặt đơn, bạn sẽ chọn nhân viên và thanh toán đặt cọc{" "}
-              <strong>30.000 ₫</strong> qua QR chuyển khoản.
+              <strong>{DEPOSIT_AMOUNT.toLocaleString("vi-VN")} ₫</strong> qua QR chuyển khoản.
             </div>
             <Button
               onClick={submitOrder}

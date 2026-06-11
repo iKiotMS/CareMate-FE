@@ -95,6 +95,33 @@ export const useUpdateProfile = () => {
   });
 };
 
+export const useAddAddress = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { label?: string; address: string; setAsDefault?: boolean }) =>
+      apiClient.post("/users/me/addresses", data).then((r) => r.data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["user"] }),
+  });
+};
+
+export const useDeleteAddress = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (addressId: string) =>
+      apiClient.delete(`/users/me/addresses/${addressId}`).then((r) => r.data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["user"] }),
+  });
+};
+
+export const useSetDefaultAddress = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (addressId: string) =>
+      apiClient.patch(`/users/me/addresses/${addressId}/default`, {}).then((r) => r.data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["user"] }),
+  });
+};
+
 /** Payload tạo đơn — khớp CreateOrderDto BE */
 export interface CreateOrderPayload {
   scheduledDate: string;
@@ -102,6 +129,7 @@ export interface CreateOrderPayload {
   address: string;
   note?: string;
   taskIds: string[];
+  areaM2: number;
   photosBeforeBooking?: string[];
   paymentMethod: "CASH" | "BANK_TRANSFER" | "E_WALLET";
 }
@@ -545,6 +573,7 @@ export const useAdminCreateTask = () => {
       name: string;
       slug: string;
       price: number;
+      pricePerM2?: number;
       sortOrder?: number;
     }) => apiClient.post("/admin/tasks", data),
     onSuccess: () => {
