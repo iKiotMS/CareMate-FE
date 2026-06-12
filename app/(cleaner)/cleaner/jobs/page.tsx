@@ -70,9 +70,9 @@ export default function AssignedJobsPage() {
       </h2>
 
       {isLoading || loadingApplied ? (
-        <p className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <Loader2 className="w-5 h-5 animate-spin" /> {t("common.loading")}
-        </p>
+        </div>
       ) : isError ? (
         <p className="text-red-600">
           Lỗi tải việc.{" "}

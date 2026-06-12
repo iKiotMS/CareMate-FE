@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -66,9 +66,9 @@ export default function CustomerOrderDetailPage({
 
   if (isLoading) {
     return (
-      <p className="flex items-center gap-2 py-12">
+      <div className="flex items-center gap-2 py-12">
         <Loader2 className="w-5 h-5 animate-spin" /> {t("common.loading")}
-      </p>
+      </div>
     );
   }
 
@@ -204,7 +204,7 @@ export default function CustomerOrderDetailPage({
         action={<OrderStatusBadge status={order.status as OrderStatus} />}
       />
 
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
           {/* Timeline */}
           <Card>
@@ -224,28 +224,27 @@ export default function CustomerOrderDetailPage({
                 {pendingApplicants.map((applicant: any) => (
                   <div
                     key={applicant.cleanerId}
-                    className="flex items-center justify-between p-3 rounded-lg border border-[var(--color-border)]"
+                    className="flex items-center gap-3 p-3 rounded-lg border border-[var(--color-border)]"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-[var(--color-primary-soft)] flex items-center justify-center text-[var(--color-primary)] font-medium text-sm shrink-0">
-                        {(applicant.cleanerName ?? "?").charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="font-medium text-sm">
-                          {applicant.cleanerName ?? "Nhân viên"}
-                        </p>
-                        <p className="text-xs text-[var(--color-text-muted)]">
-                          {applicant.cleanerRating != null
-                            ? `★ ${Number(applicant.cleanerRating).toFixed(1)}`
-                            : "Chưa có đánh giá"}{" "}
-                          · {applicant.completedJobs ?? 0} đơn hoàn thành
-                        </p>
-                      </div>
+                    <div className="w-10 h-10 rounded-full bg-[var(--color-primary-soft)] flex items-center justify-center text-[var(--color-primary)] font-medium text-sm shrink-0">
+                      {(applicant.cleanerName ?? "?").charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">
+                        {applicant.cleanerName ?? "Nhân viên"}
+                      </p>
+                      <p className="text-xs text-[var(--color-text-muted)]">
+                        {applicant.cleanerRating != null
+                          ? `★ ${Number(applicant.cleanerRating).toFixed(1)}`
+                          : "Chưa có đánh giá"}{" "}
+                        · {applicant.completedJobs ?? 0} đơn
+                      </p>
                     </div>
                     <Button
                       size="sm"
                       disabled={selecting}
                       onClick={() => handleSelectCleaner(applicant.cleanerId)}
+                      className="shrink-0"
                     >
                       {selecting ? (
                         <Loader2 className="w-3 h-3 animate-spin" />
@@ -281,7 +280,7 @@ export default function CustomerOrderDetailPage({
                 <img
                   src={(depositInfo as any).qrDataUrl}
                   alt="QR đặt cọc"
-                  className="mx-auto w-52 h-52 rounded-xl border"
+                  className="mx-auto w-full max-w-[208px] aspect-square rounded-xl border"
                 />
               </div>
               <div className="mt-4 space-y-2 text-sm bg-white dark:bg-gray-900 rounded-lg p-4">
@@ -317,7 +316,7 @@ export default function CustomerOrderDetailPage({
                   <span className="text-[var(--color-text-muted)]">
                     Nội dung CK
                   </span>
-                  <code className="font-bold text-[var(--color-primary)] bg-[var(--color-primary-soft)] px-2 py-0.5 rounded">
+                  <code className="font-bold text-[var(--color-primary)] bg-[var(--color-primary-soft)] px-2 py-0.5 rounded break-all text-right max-w-[160px]">
                     {(depositInfo as any).content}
                   </code>
                 </div>
@@ -358,7 +357,7 @@ export default function CustomerOrderDetailPage({
                 <img
                   src={(finalPaymentInfo as any).qrDataUrl}
                   alt="QR thanh toán cuối"
-                  className="mx-auto w-52 h-52 rounded-xl border"
+                  className="mx-auto w-full max-w-[208px] aspect-square rounded-xl border"
                 />
               </div>
               <div className="mt-4 space-y-2 text-sm bg-white dark:bg-gray-900 rounded-lg p-4">
@@ -380,7 +379,7 @@ export default function CustomerOrderDetailPage({
                   <span className="text-[var(--color-text-muted)]">
                     Nội dung CK
                   </span>
-                  <code className="font-bold text-[var(--color-primary)] bg-[var(--color-primary-soft)] px-2 py-0.5 rounded">
+                  <code className="font-bold text-[var(--color-primary)] bg-[var(--color-primary-soft)] px-2 py-0.5 rounded break-all text-right max-w-[160px]">
                     {(finalPaymentInfo as any).content}
                   </code>
                 </div>

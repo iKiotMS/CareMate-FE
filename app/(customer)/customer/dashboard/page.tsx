@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatCard } from "@/components/shared/StatCard";
@@ -49,9 +50,9 @@ export default function CustomerDashboardPage() {
       />
 
       {isLoading ? (
-        <p className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <Loader2 className="w-5 h-5 animate-spin" /> {t("common.loading")}
-        </p>
+        </div>
       ) : (
         <>
           <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-5">
@@ -80,34 +81,58 @@ export default function CustomerDashboardPage() {
                 </Link>
               </div>
             ) : (
-              <DataTable headers={["Mã đơn", "Lịch", "Công việc", "Nhân viên", "Trạng thái", ""]}>
-                {upcoming.map((o) => (
-                  <TableRow key={o._id}>
-                    <TableCell>
-                      <span className="font-mono text-xs">#{orderIdShort(o._id)}</span>
-                    </TableCell>
-                    <TableCell>
-                      <p className="font-medium">{formatOrderDate(o.scheduledDate)}</p>
-                      <p className="text-xs text-[var(--color-text-muted)]">{o.scheduledTime}</p>
-                    </TableCell>
-                    <TableCell>
-                      <p className="font-medium">{o.tasks?.length ?? 0} mục</p>
-                      <p className="text-xs text-[var(--color-text-muted)] line-clamp-1">
-                        {o.tasks?.map((task) => task.taskName).join(", ") || "Chưa có"}
-                      </p>
-                    </TableCell>
-                    <TableCell>{o.cleanerName || (o.cleanerId ? "Đang cập nhật tên" : "Chưa phân công")}</TableCell>
-                    <TableCell>
-                      <OrderStatusBadge status={o.status as OrderStatus} />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Link href={`/customer/orders/${o._id}`}>
-                        <Button variant="ghost" size="sm">{t("common.view")}</Button>
-                      </Link>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </DataTable>
+              <>
+                {/* Mobile: card list */}
+                <div className="sm:hidden space-y-3">
+                  {upcoming.map((o) => (
+                    <Link key={o._id} href={`/customer/orders/${o._id}`} className="block">
+                      <div className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-bg-muted)] p-3 hover:border-[var(--color-primary)]/40 transition-colors active:bg-[var(--color-surface-hover)]">
+                        <div className="flex items-start justify-between gap-2 mb-1.5">
+                          <p className="font-medium text-sm text-[var(--color-text)]">
+                            {formatOrderDate(o.scheduledDate)} · {o.scheduledTime}
+                          </p>
+                          <OrderStatusBadge status={o.status as OrderStatus} />
+                        </div>
+                        <p className="text-xs text-[var(--color-text-muted)] line-clamp-1">
+                          {o.tasks?.map((task) => task.taskName).join(", ") || "Chưa có"}
+                        </p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+
+                {/* Desktop: data table */}
+                <div className="hidden sm:block">
+                  <DataTable headers={["Mã đơn", "Lịch", "Công việc", "Nhân viên", "Trạng thái", ""]}>
+                    {upcoming.map((o) => (
+                      <TableRow key={o._id}>
+                        <TableCell>
+                          <span className="font-mono text-xs">#{orderIdShort(o._id)}</span>
+                        </TableCell>
+                        <TableCell>
+                          <p className="font-medium">{formatOrderDate(o.scheduledDate)}</p>
+                          <p className="text-xs text-[var(--color-text-muted)]">{o.scheduledTime}</p>
+                        </TableCell>
+                        <TableCell>
+                          <p className="font-medium">{o.tasks?.length ?? 0} mục</p>
+                          <p className="text-xs text-[var(--color-text-muted)] line-clamp-1">
+                            {o.tasks?.map((task) => task.taskName).join(", ") || "Chưa có"}
+                          </p>
+                        </TableCell>
+                        <TableCell>{o.cleanerName || (o.cleanerId ? "Đang cập nhật tên" : "Chưa phân công")}</TableCell>
+                        <TableCell>
+                          <OrderStatusBadge status={o.status as OrderStatus} />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Link href={`/customer/orders/${o._id}`}>
+                            <Button variant="ghost" size="sm">{t("common.view")}</Button>
+                          </Link>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </DataTable>
+                </div>
+              </>
             )}
           </Card>
         </>

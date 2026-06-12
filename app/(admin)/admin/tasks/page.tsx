@@ -26,6 +26,7 @@ export default function AdminTasksPage() {
   const [showAdd, setShowAdd] = useState(false);
   const [name, setName] = useState("");
   const [price, setPrice] = useState(0);
+  const [pricePerM2, setPricePerM2] = useState(10000);
   const [error, setError] = useState("");
 
   const { data: tasksRaw, isLoading, refetch } = useAdminTasks();
@@ -39,9 +40,10 @@ export default function AdminTasksPage() {
     if (!name.trim()) return;
     setError("");
     try {
-      await createTask({ name: name.trim(), slug: slugify(name), price });
+      await createTask({ name: name.trim(), slug: slugify(name), price, pricePerM2 });
       setName("");
       setPrice(0);
+      setPricePerM2(10000);
       setShowAdd(false);
       refetch();
     } catch (err) {
@@ -85,13 +87,23 @@ export default function AdminTasksPage() {
                 required
               />
             </FormField>
-            <FormField label="Giá (VND)">
+            <FormField label="Giá cố định (VND)">
               <Input
                 type="number"
                 min={0}
                 value={price}
                 onChange={(e) => setPrice(Number(e.target.value))}
                 placeholder="0"
+                required
+              />
+            </FormField>
+            <FormField label="Giá theo diện tích (VND/m²)">
+              <Input
+                type="number"
+                min={0}
+                value={pricePerM2}
+                onChange={(e) => setPricePerM2(Number(e.target.value))}
+                placeholder="10000"
                 required
               />
             </FormField>
@@ -103,18 +115,24 @@ export default function AdminTasksPage() {
       )}
 
       {isLoading ? (
-        <p className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <Loader2 className="w-5 h-5 animate-spin" /> {t("common.loading")}
-        </p>
+        </div>
       ) : (
         <DataTable
-          headers={[t("admin.tasks.taskName"), t("admin.tasks.description"), t("admin.tasks.status"), "Thao tác"]}
+          headers={[t("admin.tasks.taskName"), t("admin.tasks.description"), "Giá cố định", "Giá/m²", t("admin.tasks.status"), "Thao tác"]}
         >
           {tasks.map((task) => (
             <TableRow key={task._id}>
               <TableCell>{task.name}</TableCell>
               <TableCell className="text-[var(--color-text-secondary)]">
                 {task.description ?? task.slug}
+              </TableCell>
+              <TableCell className="text-right tabular-nums">
+                {(task.price ?? 0).toLocaleString("vi-VN")} ₫
+              </TableCell>
+              <TableCell className="text-right tabular-nums">
+                {(task.pricePerM2 ?? 10000).toLocaleString("vi-VN")} ₫/m²
               </TableCell>
               <TableCell>
                 <Badge variant={task.isActive ? "success" : "default"}>
