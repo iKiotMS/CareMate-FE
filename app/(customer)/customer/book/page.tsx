@@ -8,7 +8,14 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input, Textarea, Select, FormField } from "@/components/ui/Input";
 import { t } from "@/lib/i18n";
-import { TIME_SLOTS } from "@/lib/constants";
+import {
+  START_TIMES,
+  HOURLY_RATE,
+  AREA_RATE,
+  AREA_OPTIONS,
+  DURATION_OPTIONS,
+  CLEANER_COUNT_OPTIONS,
+} from "@/lib/constants";
 import {
   useCreateOrder,
   useTaskCatalog,
@@ -18,14 +25,16 @@ import {
 import { getApiErrorMessage } from "@/lib/api-errors";
 import { Check, Upload, Loader2, MapPin, Plus } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { toast } from "sonner";
 import type { UserAddress } from "@/types";
+
+const MAX_PHOTOS = 5;
+const MAX_PHOTO_MB = 5;
 
 interface TaskItem {
   _id: string;
   name: string;
   description?: string;
-  price: number;
-  pricePerM2: number;
   isActive: boolean;
 }
 
@@ -35,6 +44,9 @@ export default function BookCleaningPage() {
   const [step, setStep] = useState(1);
   const [error, setError] = useState("");
   const [today, setToday] = useState("");
+  const [maxDate, setMaxDate] = useState("");
+  const [step1Errors, setStep1Errors] = useState<{ date?: string; time?: string; address?: string }>({});
+  const [step2Errors, setStep2Errors] = useState<{ tasks?: string; area?: string }>({});
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
@@ -44,22 +56,27 @@ export default function BookCleaningPage() {
     address: "",
     note: "",
     taskIds: [] as string[],
-    areaM2: "",
+    durationHours: DURATION_OPTIONS[0],
+    numCleaners: CLEANER_COUNT_OPTIONS[0],
+    areaOptionIdx: -1,
   });
 
   useEffect(() => {
-    setToday(new Date().toISOString().split("T")[0]);
+    const now = new Date();
+    setToday(now.toISOString().split("T")[0]);
+    const max = new Date(now);
+    max.setDate(max.getDate() + 90);
+    setMaxDate(max.toISOString().split("T")[0]);
   }, []);
 
   useEffect(() => {
     if (!form.time || !form.date) return;
     const today = new Date().toISOString().split("T")[0];
     if (form.date !== today) return;
-    const startTime = form.time.split(" - ")[0];
-    const [hours, minutes] = startTime.split(":").map(Number);
-    const slotStart = new Date();
-    slotStart.setHours(hours, minutes, 0, 0);
-    if (slotStart.getTime() < Date.now() + 60 * 60 * 1000) {
+    const [hours, minutes] = form.time.split(":").map(Number);
+    const start = new Date();
+    start.setHours(hours, minutes, 0, 0);
+    if (start.getTime() < Date.now() + 2 * 60 * 60 * 1000) {
       setForm((f) => ({ ...f, time: "" }));
     }
   }, [form.date]);
@@ -108,12 +125,11 @@ export default function BookCleaningPage() {
   const selectedTasks = activeTasks.filter((task) =>
     form.taskIds.includes(task._id),
   );
-  const areaM2Num = parseFloat(form.areaM2) || 0;
+  const selectedArea = form.areaOptionIdx >= 0 ? AREA_OPTIONS[form.areaOptionIdx] : null;
+  const areaM2Num = selectedArea?.areaM2 ?? 0;
   const DEPOSIT_AMOUNT = 30_000;
-  const totalAmount = selectedTasks.reduce((sum, t) => {
-    const perM2 = t.pricePerM2 ?? 10000;
-    return sum + t.price + areaM2Num * perM2;
-  }, 0);
+  const totalAmount =
+    HOURLY_RATE * form.durationHours * form.numCleaners + AREA_RATE * areaM2Num;
 
   const steps = [
     { id: 1, label: t("customer.book.step1") },
@@ -122,14 +138,13 @@ export default function BookCleaningPage() {
     { id: 4, label: t("customer.book.step4") },
   ];
 
-  const isSlotUnavailable = (slot: string): boolean => {
+  const isStartTimeUnavailable = (startTime: string): boolean => {
     if (!form.date || !today) return false;
     if (form.date !== today) return false;
-    const startTime = slot.split(" - ")[0];
     const [hours, minutes] = startTime.split(":").map(Number);
-    const slotStart = new Date();
-    slotStart.setHours(hours, minutes, 0, 0);
-    return slotStart.getTime() < Date.now() + 60 * 60 * 1000;
+    const start = new Date();
+    start.setHours(hours, minutes, 0, 0);
+    return start.getTime() < Date.now() + 2 * 60 * 60 * 1000;
   };
 
   const toggleTask = (id: string) => {
@@ -141,15 +156,44 @@ export default function BookCleaningPage() {
     }));
   };
 
-  const canNext = () => {
-    if (step === 1) return form.date && form.time && form.address.trim();
-    if (step === 2) return form.taskIds.length > 0 && areaM2Num >= 1;
-    return true;
+  const validateStep1 = (): boolean => {
+    const errs: typeof step1Errors = {};
+    if (!form.date) errs.date = "Vui lòng chọn ngày dọn";
+    if (!form.time) errs.time = "Vui lòng chọn giờ bắt đầu";
+    if (!form.address.trim()) errs.address = "Vui lòng nhập địa chỉ";
+    setStep1Errors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const validateStep2 = (): boolean => {
+    const errs: typeof step2Errors = {};
+    if (form.taskIds.length === 0) errs.tasks = "Vui lòng chọn ít nhất một công việc";
+    if (form.areaOptionIdx < 0) errs.area = "Vui lòng chọn khoảng diện tích";
+    setStep2Errors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const handleNext = () => {
+    if (step === 1 && !validateStep1()) return;
+    if (step === 2 && !validateStep2()) return;
+    setStep((s) => s + 1);
   };
 
   const handleFiles = (files: FileList | null) => {
     if (!files?.length) return;
-    setSelectedFiles((prev) => [...prev, ...Array.from(files)]);
+    const existing = selectedFiles.length + photoUrls.length;
+    const remaining = MAX_PHOTOS - existing;
+    if (remaining <= 0) {
+      toast.error(`Tối đa ${MAX_PHOTOS} ảnh`);
+      return;
+    }
+    const toAdd = Array.from(files).slice(0, remaining);
+    const oversized = toAdd.filter((f) => f.size > MAX_PHOTO_MB * 1024 * 1024);
+    if (oversized.length > 0) {
+      toast.error(`Mỗi ảnh tối đa ${MAX_PHOTO_MB}MB`);
+      return;
+    }
+    setSelectedFiles((prev) => [...prev, ...toAdd]);
   };
 
   const removeSelectedFile = (index: number) => {
@@ -184,16 +228,20 @@ export default function BookCleaningPage() {
     setError("");
     try {
       const urls = await uploadAllPhotos();
-      await createOrder({
+      const result = await createOrder({
         scheduledDate: form.date,
         scheduledTime: form.time,
         address: form.address.trim(),
         note: form.note.trim() || undefined,
         taskIds: form.taskIds,
+        durationHours: form.durationHours,
+        numCleaners: form.numCleaners,
         areaM2: areaM2Num,
         photosBeforeBooking: urls.length > 0 ? urls : undefined,
         paymentMethod: "BANK_TRANSFER",
       });
+      const orderId = (result as any)?.data?._id ?? (result as any)?._id;
+      toast.success(orderId ? `Đặt lịch thành công! Mã đơn #${String(orderId).slice(-6).toUpperCase()}` : "Đặt lịch thành công!");
       router.push("/customer/orders");
     } catch (err) {
       setError(
@@ -222,22 +270,32 @@ export default function BookCleaningPage() {
       <Card padding="lg" className="max-w-4xl">
         {step === 1 && (
           <div className="space-y-4">
-            <FormField label={t("customer.book.date")}>
+            <FormField label={t("customer.book.date")} required>
               <Input
                 type="date"
                 value={form.date}
                 min={today}
-                onChange={(e) => setForm({ ...form, date: e.target.value })}
+                max={maxDate}
+                onChange={(e) => {
+                  setForm({ ...form, date: e.target.value });
+                  setStep1Errors((prev) => ({ ...prev, date: undefined }));
+                }}
+                className={step1Errors.date ? "border-red-500" : ""}
               />
+              {step1Errors.date && <p className="mt-1 text-xs text-red-600">{step1Errors.date}</p>}
             </FormField>
-            <FormField label={t("customer.book.timeSlot")}>
+            <FormField label="Giờ bắt đầu" required>
               <Select
                 value={form.time}
-                onChange={(e) => setForm({ ...form, time: e.target.value })}
+                onChange={(e) => {
+                  setForm({ ...form, time: e.target.value });
+                  setStep1Errors((prev) => ({ ...prev, time: undefined }));
+                }}
+                className={step1Errors.time ? "border-red-500" : ""}
               >
-                <option value="">— Chọn khung giờ —</option>
-                {TIME_SLOTS.map((s) => {
-                  const unavailable = isSlotUnavailable(s);
+                <option value="">— Chọn giờ bắt đầu —</option>
+                {START_TIMES.map((s) => {
+                  const unavailable = isStartTimeUnavailable(s);
                   return (
                     <option key={s} value={s} disabled={unavailable}>
                       {s}{unavailable ? " (Không còn khả dụng)" : ""}
@@ -245,11 +303,29 @@ export default function BookCleaningPage() {
                   );
                 })}
               </Select>
+              <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+                Thời lượng dọn được chọn ở bước sau.
+              </p>
+              {step1Errors.time && <p className="mt-1 text-xs text-red-600">{step1Errors.time}</p>}
             </FormField>
             <div>
               <p className="text-sm font-medium text-[var(--color-text)] mb-2">
-                {t("customer.book.address")}
+                {t("customer.book.address")} <span className="text-red-500">*</span>
               </p>
+
+              {step1Errors.address && (
+                <p className="mb-2 text-xs text-red-600">{step1Errors.address}</p>
+              )}
+
+              {savedAddresses.length === 0 && !showManualInput && (
+                <p className="mb-2 text-sm text-amber-600">
+                  Bạn chưa có địa chỉ đã lưu.{" "}
+                  <a href="/customer/profile" className="text-[var(--color-primary)] underline">
+                    Thêm địa chỉ trong hồ sơ
+                  </a>{" "}
+                  hoặc nhập địa chỉ mới bên dưới.
+                </p>
+              )}
 
               {savedAddresses.length > 0 ? (
                 <div className="space-y-2">
@@ -314,8 +390,11 @@ export default function BookCleaningPage() {
                   {showManualInput && (
                     <Input
                       value={form.address}
-                      onChange={(e) => setForm({ ...form, address: e.target.value })}
-                      placeholder="Số nhà, đường, quận, TP.HCM"
+                      onChange={(e) => {
+                        setForm({ ...form, address: e.target.value });
+                        setStep1Errors((prev) => ({ ...prev, address: undefined }));
+                      }}
+                      placeholder="Số nhà, tên đường, phường/xã, quận/huyện, TP.HCM"
                       autoFocus
                     />
                   )}
@@ -332,8 +411,11 @@ export default function BookCleaningPage() {
                 <>
                   <Input
                     value={form.address}
-                    onChange={(e) => setForm({ ...form, address: e.target.value })}
-                    placeholder="Số nhà, đường, quận, TP.HCM"
+                    onChange={(e) => {
+                      setForm({ ...form, address: e.target.value });
+                      setStep1Errors((prev) => ({ ...prev, address: undefined }));
+                    }}
+                    placeholder="Số nhà, tên đường, phường/xã, quận/huyện, TP.HCM"
                   />
                   <p className="text-xs text-[var(--color-text-muted)] mt-1">
                     Lưu địa chỉ trong{" "}
@@ -348,8 +430,11 @@ export default function BookCleaningPage() {
             <FormField label={t("customer.book.note")}>
               <Textarea
                 value={form.note}
+                maxLength={500}
                 onChange={(e) => setForm({ ...form, note: e.target.value })}
+                placeholder="Ghi chú cho nhân viên (tuỳ chọn)..."
               />
+              <p className="mt-1 text-xs text-[var(--color-text-muted)] text-right">{form.note.length}/500</p>
             </FormField>
           </div>
         )}
@@ -373,15 +458,14 @@ export default function BookCleaningPage() {
                 <div className="grid sm:grid-cols-2 gap-3">
                   {activeTasks.map((task) => {
                     const selected = form.taskIds.includes(task._id);
-                    const perM2 = task.pricePerM2 ?? 10000;
-                    const taskTotal = areaM2Num > 0
-                      ? task.price + areaM2Num * perM2
-                      : null;
                     return (
                       <button
                         key={task._id}
                         type="button"
-                        onClick={() => toggleTask(task._id)}
+                        onClick={() => {
+                          toggleTask(task._id);
+                          setStep2Errors((prev) => ({ ...prev, tasks: undefined }));
+                        }}
                         className={cn(
                           "text-left p-4 rounded-[var(--radius-lg)] border-2 transition-all",
                           selected
@@ -399,79 +483,129 @@ export default function BookCleaningPage() {
                                 {task.description}
                               </p>
                             )}
-                            <p className="text-xs text-[var(--color-text-muted)] mt-1">
-                              {task.price.toLocaleString("vi-VN")} ₫ + {perM2.toLocaleString("vi-VN")} ₫/m²
-                            </p>
                           </div>
-                          <div className="flex flex-col items-end gap-1 shrink-0">
-                            {taskTotal !== null ? (
-                              <span className="text-sm font-semibold text-[var(--color-primary)] whitespace-nowrap">
-                                {taskTotal.toLocaleString("vi-VN")} ₫
-                              </span>
-                            ) : null}
-                            {selected && (
-                              <Check className="w-5 h-5 text-[var(--color-primary)]" />
-                            )}
-                          </div>
+                          {selected && (
+                            <Check className="w-5 h-5 text-[var(--color-primary)] shrink-0" />
+                          )}
                         </div>
                       </button>
                     );
                   })}
                 </div>
 
-                <div className="mt-5">
-                  <FormField label="Diện tích cần dọn dẹp (m²)">
-                    <Input
-                      type="number"
-                      min={1}
-                      step={1}
-                      value={form.areaM2}
-                      onChange={(e) => setForm({ ...form, areaM2: e.target.value })}
-                      placeholder="Ví dụ: 50"
-                    />
-                    <p className="mt-1 text-xs text-[var(--color-text-muted)]">
-                      Giá theo diện tích: 10.000 ₫/m² cho mỗi loại dịch vụ
-                    </p>
-                  </FormField>
+                {step2Errors.tasks && (
+                  <p className="mt-2 text-xs text-red-600">{step2Errors.tasks}</p>
+                )}
+
+                {/* Duration (hours) */}
+                <div className="mt-6">
+                  <p className="text-sm font-medium text-[var(--color-text)] mb-2">
+                    Thời lượng làm việc <span className="text-red-500">*</span>
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {DURATION_OPTIONS.map((h) => (
+                      <button
+                        key={h}
+                        type="button"
+                        onClick={() => setForm((f) => ({ ...f, durationHours: h }))}
+                        className={cn(
+                          "px-4 py-2 rounded-[var(--radius-lg)] border-2 text-sm font-medium transition-all",
+                          form.durationHours === h
+                            ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)] text-[var(--color-primary)]"
+                            : "border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-primary)]/50",
+                        )}
+                      >
+                        {h} giờ
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                {selectedTasks.length > 0 && areaM2Num >= 1 && (
-                  <div className="mt-4 rounded-lg bg-[var(--color-primary)]/5 px-4 py-3 border border-[var(--color-primary)]/20 space-y-1">
-                    {selectedTasks.map((t) => {
-                      const perM2 = t.pricePerM2 ?? 10000;
-                      return (
-                        <div key={t._id} className="flex items-start justify-between gap-2 text-xs text-[var(--color-text-secondary)]">
-                          <span className="shrink-0 max-w-[45%] truncate">{t.name}</span>
-                          <span className="text-right">
-                            {(t.price + areaM2Num * perM2).toLocaleString("vi-VN")} ₫
-                          </span>
-                        </div>
-                      );
-                    })}
-                    <div className="border-t border-[var(--color-primary)]/20 pt-2 mt-2 flex items-center justify-between">
-                      <span className="text-sm font-medium text-[var(--color-text)]">
-                        Tổng tiền
-                      </span>
-                      <span className="text-lg font-bold text-[var(--color-primary)]">
-                        {totalAmount.toLocaleString("vi-VN")} ₫
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-[var(--color-text-muted)]">
-                      <span>Đặt cọc ngay</span>
-                      <span>{DEPOSIT_AMOUNT.toLocaleString("vi-VN")} ₫</span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-[var(--color-text-muted)]">
-                      <span>Còn lại sau khi hoàn thành dịch vụ</span>
-                      <span>{Math.max(0, totalAmount - DEPOSIT_AMOUNT).toLocaleString("vi-VN")} ₫</span>
-                    </div>
-                  </div>
-                )}
-
-                {selectedTasks.length > 0 && areaM2Num < 1 && (
-                  <p className="mt-3 text-xs text-amber-600">
-                    Vui lòng nhập diện tích để xem tổng tiền.
+                {/* Number of cleaners */}
+                <div className="mt-5">
+                  <p className="text-sm font-medium text-[var(--color-text)] mb-2">
+                    Số lượng nhân viên <span className="text-red-500">*</span>
                   </p>
-                )}
+                  <div className="flex flex-wrap gap-2">
+                    {CLEANER_COUNT_OPTIONS.map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => setForm((f) => ({ ...f, numCleaners: n }))}
+                        className={cn(
+                          "px-4 py-2 rounded-[var(--radius-lg)] border-2 text-sm font-medium transition-all",
+                          form.numCleaners === n
+                            ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)] text-[var(--color-primary)]"
+                            : "border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-primary)]/50",
+                        )}
+                      >
+                        {n} người
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mt-1.5 text-xs text-[var(--color-text-muted)]">
+                    Giá: {HOURLY_RATE.toLocaleString("vi-VN")} ₫/giờ cho mỗi nhân viên
+                  </p>
+                </div>
+
+                {/* Area */}
+                <div className="mt-5">
+                  <p className="text-sm font-medium text-[var(--color-text)] mb-2">
+                    Diện tích cần dọn dẹp <span className="text-red-500">*</span>
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {AREA_OPTIONS.map((opt, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setForm((f) => ({ ...f, areaOptionIdx: idx }));
+                          setStep2Errors((prev) => ({ ...prev, area: undefined }));
+                        }}
+                        className={cn(
+                          "flex flex-col items-center gap-1 px-3 py-3 rounded-[var(--radius-lg)] border-2 text-sm font-medium transition-all",
+                          form.areaOptionIdx === idx
+                            ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)] text-[var(--color-primary)]"
+                            : "border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-primary)]/50",
+                        )}
+                      >
+                        <span className="font-semibold">{opt.label}</span>
+                        <span className="text-xs font-normal opacity-80">
+                          {(opt.areaM2 * AREA_RATE).toLocaleString("vi-VN")} ₫
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                  {step2Errors.area && <p className="mt-2 text-xs text-red-600">{step2Errors.area}</p>}
+                </div>
+
+                {/* Price summary */}
+                <div className="mt-5 rounded-lg bg-[var(--color-primary)]/5 px-4 py-3 border border-[var(--color-primary)]/20 space-y-1">
+                  <div className="flex items-center justify-between text-xs text-[var(--color-text-secondary)]">
+                    <span>Giờ công ({form.durationHours} giờ × {form.numCleaners} người)</span>
+                    <span>{(HOURLY_RATE * form.durationHours * form.numCleaners).toLocaleString("vi-VN")} ₫</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-[var(--color-text-secondary)]">
+                    <span>Phụ phí diện tích ({selectedArea ? selectedArea.label : "—"})</span>
+                    <span>{(AREA_RATE * areaM2Num).toLocaleString("vi-VN")} ₫</span>
+                  </div>
+                  <div className="flex items-center justify-between border-t border-[var(--color-primary)]/20 pt-2 mt-1">
+                    <span className="text-sm font-medium text-[var(--color-text)]">
+                      Tổng tiền
+                    </span>
+                    <span className="text-lg font-bold text-[var(--color-primary)]">
+                      {totalAmount.toLocaleString("vi-VN")} ₫
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-[var(--color-text-muted)]">
+                    <span>Đặt cọc ngay</span>
+                    <span>{DEPOSIT_AMOUNT.toLocaleString("vi-VN")} ₫</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-[var(--color-text-muted)]">
+                    <span>Còn lại sau khi hoàn thành dịch vụ</span>
+                    <span>{Math.max(0, totalAmount - DEPOSIT_AMOUNT).toLocaleString("vi-VN")} ₫</span>
+                  </div>
+                </div>
               </>
             )}
           </div>
@@ -487,23 +621,28 @@ export default function BookCleaningPage() {
               className="hidden"
               onChange={(e) => handleFiles(e.target.files)}
             />
-            <p className="text-sm text-[var(--color-text-secondary)] mb-4">
+            <p className="text-sm text-[var(--color-text-secondary)] mb-1">
               {t("customer.book.uploadPhotos")}
+            </p>
+            <p className="text-xs text-[var(--color-text-muted)] mb-4">
+              Tối đa {MAX_PHOTOS} ảnh, mỗi ảnh ≤ {MAX_PHOTO_MB}MB. Định dạng: JPG, PNG, WEBP.
             </p>
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="w-full border-2 border-dashed border-[var(--color-border)] rounded-[var(--radius-xl)] p-6 sm:p-12 text-center hover:border-[var(--color-primary)] transition-colors"
+              disabled={selectedFiles.length + photoUrls.length >= MAX_PHOTOS}
+              className="w-full border-2 border-dashed border-[var(--color-border)] rounded-[var(--radius-xl)] p-6 sm:p-12 text-center hover:border-[var(--color-primary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Upload className="w-10 h-10 mx-auto text-[var(--color-text-muted)] mb-3" />
               <p className="text-sm text-[var(--color-text-secondary)]">
-                Chọn ảnh (tùy chọn)
+                {selectedFiles.length + photoUrls.length >= MAX_PHOTOS
+                  ? `Đã đạt giới hạn ${MAX_PHOTOS} ảnh`
+                  : `Chọn ảnh (tùy chọn) · Còn ${MAX_PHOTOS - selectedFiles.length - photoUrls.length} ảnh`}
               </p>
             </button>
             {(selectedFiles.length > 0 || photoUrls.length > 0) && (
               <p className="text-sm text-[var(--color-success)] mt-2">
-                {selectedFiles.length} file chờ upload · {photoUrls.length} URL
-                đã có
+                {selectedFiles.length} file chờ upload · {photoUrls.length} URL đã có
               </p>
             )}
             {previews.length > 0 && (
@@ -557,30 +696,32 @@ export default function BookCleaningPage() {
             </h3>
             <div className="rounded-[var(--radius-lg)] bg-[var(--color-bg-muted)] p-4 space-y-2 text-sm">
               <p>
-                <strong>{t("customer.book.date")}:</strong> {form.date}
+                <strong>{t("customer.book.date")}:</strong>{" "}
+                {form.date ? new Date(form.date + "T00:00:00").toLocaleDateString("vi-VN", { dateStyle: "long" }) : ""}
               </p>
               <p>
-                <strong>{t("customer.book.timeSlot")}:</strong> {form.time}
+                <strong>Giờ bắt đầu:</strong> {form.time}
               </p>
               <p>
                 <strong>{t("customer.book.address")}:</strong> {form.address}
               </p>
               <p>
-                <strong>Diện tích:</strong> {areaM2Num} m²
+                <strong>Thời lượng:</strong> {form.durationHours} giờ
+              </p>
+              <p>
+                <strong>Số nhân viên:</strong> {form.numCleaners} người
+              </p>
+              <p>
+                <strong>Diện tích:</strong> {selectedArea ? selectedArea.label : "—"}
               </p>
               <p>
                 <strong>{t("customer.book.totalTasks")}:</strong>{" "}
                 {selectedTasks.length}
               </p>
               <ul className="list-disc list-inside text-[var(--color-text-secondary)]">
-                {selectedTasks.map((task) => {
-                  const perM2 = task.pricePerM2 ?? 10000;
-                  return (
-                    <li key={task._id}>
-                      {task.name} — {(task.price + areaM2Num * perM2).toLocaleString("vi-VN")} ₫
-                    </li>
-                  );
-                })}
+                {selectedTasks.map((task) => (
+                  <li key={task._id}>{task.name}</li>
+                ))}
               </ul>
             </div>
             <div className="rounded-[var(--radius-lg)] bg-[var(--color-primary)]/5 px-4 py-3 border border-[var(--color-primary)]/20 space-y-1">
@@ -607,26 +748,35 @@ export default function BookCleaningPage() {
               className="w-full mt-4"
             >
               {busy ? (
-                <Loader2 className="w-4 h-4 animate-spin inline mr-2" />
-              ) : null}
-              {t("customer.book.placeOrder")}
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin inline mr-2" />
+                  Đang xử lý...
+                </>
+              ) : t("customer.book.placeOrder")}
             </Button>
           </div>
         )}
 
         <div className="flex justify-between mt-8 pt-6 border-t border-[var(--color-border)]">
-          <Button
-            variant="outline"
-            onClick={() => setStep((s) => Math.max(1, s - 1))}
-            disabled={step === 1 || busy}
-          >
-            {t("common.previous")}
-          </Button>
-          {step < 4 ? (
+          {step === 1 ? (
             <Button
-              onClick={() => setStep((s) => s + 1)}
-              disabled={!canNext() || busy}
+              variant="outline"
+              onClick={() => router.push("/customer")}
+              disabled={busy}
             >
+              {t("common.cancel")}
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              onClick={() => setStep((s) => Math.max(1, s - 1))}
+              disabled={busy}
+            >
+              {t("common.previous")}
+            </Button>
+          )}
+          {step < 4 ? (
+            <Button onClick={handleNext} disabled={busy}>
               {t("common.next")}
             </Button>
           ) : null}

@@ -46,3 +46,6 @@ pnpm-lock.yaml
 
 # Cache
 .turbo/
+
+.vercel
+.claude

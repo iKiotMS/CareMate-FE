@@ -39,8 +39,6 @@ export interface TaskCatalogItem {
   name: string;
   slug: string;
   description?: string;
-  price: number;
-  pricePerM2: number;
   isActive: boolean;
   sortOrder: number;
 }
@@ -48,7 +46,6 @@ export interface TaskCatalogItem {
 export interface OrderTask {
   taskCatalogId: string;
   taskName: string;
-  taskPrice: number;
   isDone: boolean;
   photoBefore?: string | null;
   photoAfter?: string | null;
@@ -85,15 +82,18 @@ export interface Order {
   customerId: string;
   customerName?: string;
   customerPhone?: string | null;
-  cleanerId?: string | null;
   cleanerName?: string | null;
-  pendingCleanerId?: string | null;
+  cleanerIds?: string[];
+  cleanerNames?: string[];
+  pendingCleanerIds?: string[];
   status: OrderStatus;
   scheduledDate: string;
   scheduledTime: string;
   address: string;
   note?: string | null;
   tasks: OrderTask[];
+  durationHours?: number;
+  numCleaners?: number;
   areaM2?: number;
   photosBeforeBooking?: string[];
   photosCheckin?: string[];

@@ -14,7 +14,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
   return (
     <PortalLayout
       navItems={customerNav}
-      portalTitle={t("nav.customer.dashboard")}
+      portalTitle="Cổng khách hàng"
       variant="customer"
       userName={displayName}
     >

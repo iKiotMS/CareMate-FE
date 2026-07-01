@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { formatDistanceToNow } from "date-fns";
+import { vi } from "date-fns/locale";
 import type { Notification } from "@/types";
 import { cn } from "@/lib/cn";
 import { toast } from "sonner";
@@ -23,21 +24,21 @@ export default function NotificationsPage() {
 
   function handleMarkRead(id: string) {
     markRead.mutate([id], {
-      onError: () => toast.error("Failed to mark as read"),
+      onError: () => toast.error("Không thể đánh dấu đã đọc"),
     });
   }
 
   function handleMarkAllRead() {
     markAllRead.mutate(undefined, {
-      onSuccess: () => toast.success("All notifications marked as read"),
-      onError: () => toast.error("Failed to mark all as read"),
+      onSuccess: () => toast.success("Đã đánh dấu tất cả là đã đọc"),
+      onError: () => toast.error("Không thể cập nhật thông báo"),
     });
   }
 
   if (isLoading) {
     return (
       <div className="p-6 space-y-4">
-        <PageHeader title="Notifications" />
+        <PageHeader title="Thông báo" />
         {Array.from({ length: 5 }).map((_, i) => (
           <div key={i} className="rounded-xl border border-[var(--color-border)] p-4 space-y-2">
             <Skeleton className="h-4 w-1/3" />
@@ -53,16 +54,16 @@ export default function NotificationsPage() {
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <PageHeader title="Notifications" subtitle={`${total} total`} />
+        <PageHeader title="Thông báo" subtitle={`${total} thông báo`} />
         {notifications.some((n) => !n.isRead) && (
           <Button variant="ghost" size="sm" onClick={handleMarkAllRead}>
-            Mark all read
+            Đánh dấu tất cả đã đọc
           </Button>
         )}
       </div>
 
       {notifications.length === 0 ? (
-        <EmptyState title="No notifications" description="You're all caught up!" />
+        <EmptyState title="Không có thông báo" description="Bạn đã đọc hết thông báo rồi!" />
       ) : (
         <div className="space-y-2">
           {notifications.map((n) => (
@@ -97,7 +98,7 @@ function NotificationRow({
         <p className="font-medium text-sm text-[var(--color-text)]">{n.title}</p>
         <p className="text-sm text-[var(--color-text-secondary)]">{n.body}</p>
         <p className="mt-1 text-xs text-[var(--color-text-muted)]">
-          {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
+          {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true, locale: vi })}
         </p>
       </div>
       {!n.isRead && (
@@ -105,7 +106,7 @@ function NotificationRow({
           onClick={() => onMarkRead(n._id)}
           className="text-xs text-[var(--color-primary)] hover:underline whitespace-nowrap"
         >
-          Mark read
+          Đánh dấu đã đọc
         </button>
       )}
     </div>

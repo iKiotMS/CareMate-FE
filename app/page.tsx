@@ -81,7 +81,7 @@ export default function LandingPage() {
                 <div className="relative overflow-hidden rounded-[2rem] border border-white/30 bg-gradient-to-br from-white via-slate-100 to-slate-50 shadow-[0_40px_120px_-40px_rgba(15,23,42,0.2)]">
                   <Image
                     src="/images/screen.png"
-                    alt="Screen preview"
+                    alt="Giao diện ứng dụng CareMate — đặt lịch dọn dẹp trực tuyến"
                     width={512}
                     height={320}
                     className="h-full w-full object-cover"

@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/Badge";
 import { t } from "@/lib/i18n";
 import {
   useUser,
+  useUpdateProfile,
+  useChangePassword,
   useAddAddress,
   useDeleteAddress,
   useSetDefaultAddress,
@@ -17,6 +19,7 @@ import { useAuthStore } from "@/hooks/useAuth";
 import type { UserAddress } from "@/types";
 import { Loader2, MapPin, Plus, Star, Trash2 } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { toast } from "sonner";
 
 const LABEL_PRESETS = ["Nhà", "Văn phòng", "Khác"];
 
@@ -24,6 +27,62 @@ export default function CustomerProfilePage() {
   const { data: user, isLoading } = useUser();
   const storeUser = useAuthStore((s) => s.user);
   const profile = user ?? storeUser;
+
+  // profile edit state
+  const [editFullName, setEditFullName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const { mutateAsync: updateProfile, isPending: updatingProfile } = useUpdateProfile();
+
+  useEffect(() => {
+    if (profile) {
+      setEditFullName(profile.fullName ?? "");
+      setEditPhone((profile as any).phone ?? "");
+    }
+  }, [profile]);
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editFullName.trim()) {
+      toast.error("Họ và tên không được để trống");
+      return;
+    }
+    try {
+      await updateProfile({ fullName: editFullName.trim(), phone: editPhone.trim() || undefined });
+      toast.success("Cập nhật hồ sơ thành công");
+      setIsEditing(false);
+    } catch {
+      toast.error("Không thể cập nhật hồ sơ. Vui lòng thử lại.");
+    }
+  };
+
+  // password change state
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const { mutateAsync: changePassword, isPending: changingPassword } = useChangePassword();
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword.length < 6) {
+      toast.error("Mật khẩu mới phải ít nhất 6 ký tự");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("Xác nhận mật khẩu không khớp");
+      return;
+    }
+    try {
+      await changePassword({ currentPassword, newPassword });
+      toast.success("Đổi mật khẩu thành công");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? "Không thể đổi mật khẩu. Vui lòng thử lại.";
+      toast.error(msg);
+    }
+  };
 
   // address form state
   const [showAddForm, setShowAddForm] = useState(false);
@@ -102,18 +161,60 @@ export default function CustomerProfilePage() {
               <p className="text-sm text-[var(--color-text-muted)]">{profile.email}</p>
             </div>
           </div>
-          <FormField label={t("auth.fullName")}>
-            <Input defaultValue={profile.fullName} readOnly />
-          </FormField>
-          <FormField label={t("auth.phone")}>
-            <Input defaultValue={profile.phone ?? ""} readOnly />
-          </FormField>
-          <FormField label={t("auth.email")}>
-            <Input defaultValue={profile.email} disabled />
-          </FormField>
-          <p className="text-xs text-[var(--color-text-muted)] mt-2">
-            Cập nhật hồ sơ sẽ có trong phiên bản sau.
-          </p>
+
+          {isEditing ? (
+            <form onSubmit={handleSaveProfile} className="space-y-0">
+              <FormField label={t("auth.fullName")} required>
+                <Input
+                  value={editFullName}
+                  onChange={(e) => setEditFullName(e.target.value)}
+                  placeholder="Nguyễn Văn A"
+                />
+              </FormField>
+              <FormField label={t("auth.phone")}>
+                <Input
+                  value={editPhone}
+                  onChange={(e) => setEditPhone(e.target.value)}
+                  placeholder="0912345678"
+                />
+              </FormField>
+              <FormField label={t("auth.email")}>
+                <Input defaultValue={profile.email} disabled />
+              </FormField>
+              <div className="flex gap-2 mt-2">
+                <Button type="submit" size="sm" disabled={updatingProfile}>
+                  {updatingProfile ? <Loader2 className="w-4 h-4 animate-spin" /> : t("common.save")}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setIsEditing(false);
+                    setEditFullName(profile.fullName ?? "");
+                    setEditPhone((profile as any).phone ?? "");
+                  }}
+                >
+                  {t("common.cancel")}
+                </Button>
+              </div>
+            </form>
+          ) : (
+            <>
+              <FormField label={t("auth.fullName")}>
+                <Input defaultValue={profile.fullName} readOnly />
+              </FormField>
+              <FormField label={t("auth.phone")}>
+                <Input defaultValue={(profile as any).phone ?? ""} readOnly />
+              </FormField>
+              <FormField label={t("auth.email")}>
+                <Input defaultValue={profile.email} disabled />
+              </FormField>
+              <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                {t("common.edit")} hồ sơ
+              </Button>
+            </>
+          )}
         </Card>
 
         {/* ── Address Book ── */}
@@ -179,7 +280,7 @@ export default function CustomerProfilePage() {
                   <Input
                     value={newAddress}
                     onChange={(e) => setNewAddress(e.target.value)}
-                    placeholder="Số nhà, đường, quận, TP.HCM"
+                    placeholder="Số nhà, tên đường, phường/xã, quận/huyện, TP.HCM"
                     required
                   />
                 </FormField>
@@ -283,18 +384,40 @@ export default function CustomerProfilePage() {
           {/* Password card */}
           <Card>
             <h2 className="font-semibold mb-4">{t("customer.profile.changePassword")}</h2>
-            <FormField label={t("customer.profile.currentPassword")}>
-              <Input type="password" disabled />
-            </FormField>
-            <FormField label={t("customer.profile.newPassword")}>
-              <Input type="password" disabled />
-            </FormField>
-            <FormField label={t("customer.profile.confirmPassword")}>
-              <Input type="password" disabled />
-            </FormField>
-            <Button variant="outline" disabled>
-              {t("customer.profile.changePassword")}
-            </Button>
+            <form onSubmit={handleChangePassword} className="space-y-0">
+              <FormField label={t("customer.profile.currentPassword")}>
+                <Input
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="Mật khẩu hiện tại"
+                />
+              </FormField>
+              <FormField label={t("customer.profile.newPassword")}>
+                <Input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Tối thiểu 6 ký tự"
+                />
+              </FormField>
+              <FormField label={t("customer.profile.confirmPassword")}>
+                <Input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Nhập lại mật khẩu mới"
+                />
+              </FormField>
+              <Button
+                type="submit"
+                variant="outline"
+                disabled={changingPassword || !currentPassword || !newPassword || !confirmPassword}
+              >
+                {changingPassword ? <Loader2 className="w-4 h-4 animate-spin mr-2 inline" /> : null}
+                {t("customer.profile.changePassword")}
+              </Button>
+            </form>
           </Card>
         </div>
       </div>

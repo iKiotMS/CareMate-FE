@@ -208,7 +208,7 @@ export default function CustomerOrdersPage() {
                     <OrderStatusBadge status={o.status as OrderStatus} />
                   </TableCell>
                   <TableCell>
-                    {o.cleanerName || (o.cleanerId ? "Đang cập nhật tên" : t("customer.orders.notAssigned"))}
+                    {o.cleanerNames?.length ? o.cleanerNames.join(", ") : o.cleanerName || t("customer.orders.notAssigned")}
                   </TableCell>
                   <TableCell>
                     <Link href={`/customer/orders/${o._id}`}>

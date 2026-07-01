@@ -58,13 +58,41 @@ export const PAYMENT_METHOD_LABEL: Record<string, string> = {
   E_WALLET: "E-Wallet",
 };
 
-export const TIME_SLOTS = [
-  "07:00 - 09:00",
-  "09:00 - 11:00",
-  "11:00 - 13:00",
-  "13:00 - 15:00",
-  "15:00 - 17:00",
-  "17:00 - 19:00",
+/** Hourly rate per cleaner-hour (VND) — must match backend HOURLY_RATE. */
+export const HOURLY_RATE = 50_000;
+
+/** Area surcharge per m² (VND) — must match backend AREA_RATE. */
+export const AREA_RATE = 2_000;
+
+/** Selectable area range tiers. areaM2 is the representative value sent to the backend (price = areaM2 × AREA_RATE). */
+export const AREA_OPTIONS = [
+  { label: "Dưới 32 m²",  areaM2: 25 },
+  { label: "32 – 64 m²",  areaM2: 50 },
+  { label: "64 – 124 m²", areaM2: 90 },
+  { label: "Trên 124 m²", areaM2: 140 },
+];
+
+/** Bookable durations in hours. */
+export const DURATION_OPTIONS = [2, 3, 4, 5, 6, 8];
+
+/** Selectable number of cleaners per order. */
+export const CLEANER_COUNT_OPTIONS = [1, 2, 3];
+
+/** Selectable start times (the duration is chosen separately inside the form). */
+export const START_TIMES = [
+  "06:00",
+  "07:00",
+  "08:00",
+  "09:00",
+  "10:00",
+  "11:00",
+  "12:00",
+  "13:00",
+  "14:00",
+  "15:00",
+  "16:00",
+  "17:00",
+  "18:00",
 ];
 
 export const PAYMENT_METHODS = [

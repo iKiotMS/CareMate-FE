@@ -352,20 +352,20 @@ export default function CleanerJobDetailPage({ params }: { params: { id: string 
         </div>
       )}
 
-      {/* Diện tích */}
-      {order.areaM2 && (
-        <div className="space-y-1">
-          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
-            Diện tích
+      {/* Thời lượng & số nhân viên */}
+      <div className="space-y-1">
+        <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+          Thời lượng
+        </p>
+        <div className="flex items-center gap-3 p-3 rounded-[var(--radius-lg)] bg-[var(--color-surface)] border border-[var(--color-border)]">
+          <RulerIcon className="w-4 h-4 text-[var(--color-primary)] shrink-0" />
+          <p className="text-sm font-medium text-[var(--color-text)]">
+            {order.durationHours ?? "—"} giờ · {order.numCleaners ?? 1} nhân viên
           </p>
-          <div className="flex items-center gap-3 p-3 rounded-[var(--radius-lg)] bg-[var(--color-surface)] border border-[var(--color-border)]">
-            <RulerIcon className="w-4 h-4 text-[var(--color-primary)] shrink-0" />
-            <p className="text-sm font-medium text-[var(--color-text)]">{order.areaM2} m²</p>
-          </div>
         </div>
-      )}
+      </div>
 
-      {/* Danh sách công việc + giá */}
+      {/* Danh sách công việc */}
       <div className="space-y-1">
         <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
           Công việc cần thực hiện
@@ -392,9 +392,6 @@ export default function CleanerJobDetailPage({ params }: { params: { id: string 
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0 ml-2">
-                <span className="text-xs text-[var(--color-text-secondary)] tabular-nums">
-                  {task.taskPrice?.toLocaleString("vi-VN")} ₫
-                </span>
                 {task.isDone && <Badge variant="success" className="text-xs">Xong</Badge>}
               </div>
             </div>
@@ -619,9 +616,6 @@ export default function CleanerJobDetailPage({ params }: { params: { id: string 
                 <p className="font-medium text-[var(--color-text)]">{task.taskName}</p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <span className="text-xs text-[var(--color-text-muted)] tabular-nums">
-                  {task.taskPrice?.toLocaleString("vi-VN")} ₫
-                </span>
                 {isTaskDone && (
                   <Badge variant="success" className="text-xs">Xong</Badge>
                 )}

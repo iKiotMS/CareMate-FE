@@ -95,6 +95,12 @@ export const useUpdateProfile = () => {
   });
 };
 
+export const useChangePassword = () =>
+  useMutation({
+    mutationFn: (data: { currentPassword: string; newPassword: string }) =>
+      apiClient.patch("/users/me/password", data).then((r) => r.data),
+  });
+
 export const useAddAddress = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -129,6 +135,8 @@ export interface CreateOrderPayload {
   address: string;
   note?: string;
   taskIds: string[];
+  durationHours: number;
+  numCleaners: number;
   areaM2: number;
   photosBeforeBooking?: string[];
   paymentMethod: "CASH" | "BANK_TRANSFER" | "E_WALLET";
@@ -572,8 +580,6 @@ export const useAdminCreateTask = () => {
     mutationFn: (data: {
       name: string;
       slug: string;
-      price: number;
-      pricePerM2?: number;
       sortOrder?: number;
     }) => apiClient.post("/admin/tasks", data),
     onSuccess: () => {
@@ -914,21 +920,6 @@ export function useAdminReviews(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PRICING
-// ─────────────────────────────────────────────────────────────────────────────
-export function useCalculateOrderTotal() {
-  return useMutation({
-    mutationFn: (taskIds: string[]) =>
-      apiClient
-        .post<{
-          tasks: { taskId: string; taskName: string; price: number }[];
-          totalAmount: number;
-        }>("/tasks/calculate-total", { taskIds })
-        .then((r) => r.data),
-  });
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // PAYMENTS — SEPAY
 // ─────────────────────────────────────────────────────────────────────────────
 import type { DepositInfo, FinalPaymentInfo, OrderApplicant } from "@/types";
@@ -973,17 +964,17 @@ export function useSelectCleaner() {
   return useMutation({
     mutationFn: ({
       orderId,
-      cleanerId,
+      cleanerIds,
     }: {
       orderId: string;
-      cleanerId: string;
+      cleanerIds: string[];
     }) =>
       apiClient
-        .post(`/orders/${orderId}/select-cleaner`, { cleanerId })
+        .post(`/orders/${orderId}/select-cleaner`, { cleanerIds })
         .then((r) => r.data),
     onSuccess: (
       _data: unknown,
-      { orderId }: { orderId: string; cleanerId: string },
+      { orderId }: { orderId: string; cleanerIds: string[] },
     ) => {
       qc.invalidateQueries({ queryKey: ["customer", "orders", orderId] });
       qc.invalidateQueries({ queryKey: ["orders", orderId, "applicants"] });

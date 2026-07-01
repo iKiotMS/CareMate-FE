@@ -47,9 +47,6 @@
       "@/lib/*": [
         "./lib/*"
       ],
-      "@/data": [
-        "./data/mock.ts"
-      ],
       "@/locales/*": [
         "./locales/*"
       ],

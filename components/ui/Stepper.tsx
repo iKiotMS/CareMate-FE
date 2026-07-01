@@ -32,8 +32,8 @@ export function Stepper({ steps, currentStep, className }: StepperProps) {
               </div>
               <span
                 className={cn(
-                  "text-sm hidden sm:inline",
-                  active ? "font-semibold text-[var(--color-text)]" : "text-[var(--color-text-muted)]",
+                  "text-sm",
+                  active ? "inline font-semibold text-[var(--color-text)]" : "hidden sm:inline text-[var(--color-text-muted)]",
                 )}
               >
                 {step.label}

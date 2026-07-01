@@ -119,7 +119,7 @@ export default function CustomerDashboardPage() {
                             {o.tasks?.map((task) => task.taskName).join(", ") || "Chưa có"}
                           </p>
                         </TableCell>
-                        <TableCell>{o.cleanerName || (o.cleanerId ? "Đang cập nhật tên" : "Chưa phân công")}</TableCell>
+                        <TableCell>{o.cleanerNames?.length ? o.cleanerNames.join(", ") : o.cleanerName || "Chưa phân công"}</TableCell>
                         <TableCell>
                           <OrderStatusBadge status={o.status as OrderStatus} />
                         </TableCell>

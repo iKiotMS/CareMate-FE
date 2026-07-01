@@ -25,6 +25,7 @@ import {
 } from "@/hooks/useApi";
 import { formatOrderDate } from "@/lib/format";
 import { getApiErrorMessage } from "@/lib/api-errors";
+import { cn } from "@/lib/cn";
 import type { Order, OrderStatus } from "@/types";
 import { AlertCircle, Loader2, UserCheck } from "lucide-react";
 
@@ -63,6 +64,7 @@ export default function CustomerOrderDetailPage({
   const [comment, setComment] = useState("");
   const [showReview, setShowReview] = useState(false);
   const [error, setError] = useState("");
+  const [selectedCleanerIds, setSelectedCleanerIds] = useState<string[]>([]);
 
   if (isLoading) {
     return (
@@ -102,7 +104,10 @@ export default function CustomerOrderDetailPage({
     {
       key: "applicants",
       label: "Chọn nhân viên",
-      done: currentIdx >= 1 || !!order.cleanerId || !!order.pendingCleanerId,
+      done:
+        currentIdx >= 1 ||
+        (order.cleanerIds?.length ?? 0) > 0 ||
+        (order.pendingCleanerIds?.length ?? 0) > 0,
     },
     {
       key: "deposit",
@@ -170,10 +175,24 @@ export default function CustomerOrderDetailPage({
     }
   };
 
-  const handleSelectCleaner = async (cleanerId: string) => {
+  const numCleaners = order.numCleaners ?? 1;
+
+  const toggleCleaner = (cleanerId: string) => {
+    setSelectedCleanerIds((prev) => {
+      if (prev.includes(cleanerId)) return prev.filter((id) => id !== cleanerId);
+      if (prev.length >= numCleaners) {
+        // single-cleaner orders: replace; multi: ignore once full
+        return numCleaners === 1 ? [cleanerId] : prev;
+      }
+      return [...prev, cleanerId];
+    });
+  };
+
+  const handleConfirmSelection = async () => {
+    if (selectedCleanerIds.length === 0) return;
     setError("");
     try {
-      await selectCleaner({ orderId, cleanerId });
+      await selectCleaner({ orderId, cleanerIds: selectedCleanerIds });
       refetch();
     } catch (err) {
       setError(getApiErrorMessage(err));
@@ -217,47 +236,60 @@ export default function CustomerOrderDetailPage({
           {/* Applicants section — visible when PENDING and cleaners have applied */}
           {order.status === "PENDING" && pendingApplicants.length > 0 && (
             <Card>
-              <h2 className="font-semibold mb-4">
+              <h2 className="font-semibold mb-1">
                 Nhân viên ứng tuyển ({pendingApplicants.length})
               </h2>
+              <p className="text-sm text-[var(--color-text-muted)] mb-4">
+                Đơn cần <strong>{numCleaners}</strong> nhân viên — đã chọn{" "}
+                <strong>{selectedCleanerIds.length}</strong>/{numCleaners}.
+              </p>
               <div className="space-y-3">
-                {pendingApplicants.map((applicant: any) => (
-                  <div
-                    key={applicant.cleanerId}
-                    className="flex items-center gap-3 p-3 rounded-lg border border-[var(--color-border)]"
-                  >
-                    <div className="w-10 h-10 rounded-full bg-[var(--color-primary-soft)] flex items-center justify-center text-[var(--color-primary)] font-medium text-sm shrink-0">
-                      {(applicant.cleanerName ?? "?").charAt(0).toUpperCase()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">
-                        {applicant.cleanerName ?? "Nhân viên"}
-                      </p>
-                      <p className="text-xs text-[var(--color-text-muted)]">
-                        {applicant.cleanerRating != null
-                          ? `★ ${Number(applicant.cleanerRating).toFixed(1)}`
-                          : "Chưa có đánh giá"}{" "}
-                        · {applicant.completedJobs ?? 0} đơn
-                      </p>
-                    </div>
-                    <Button
-                      size="sm"
-                      disabled={selecting}
-                      onClick={() => handleSelectCleaner(applicant.cleanerId)}
-                      className="shrink-0"
-                    >
-                      {selecting ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                      ) : (
-                        <>
-                          <UserCheck className="w-3 h-3 mr-1" />
-                          Chọn
-                        </>
+                {pendingApplicants.map((applicant: any) => {
+                  const picked = selectedCleanerIds.includes(applicant.cleanerId);
+                  return (
+                    <button
+                      key={applicant.cleanerId}
+                      type="button"
+                      onClick={() => toggleCleaner(applicant.cleanerId)}
+                      className={cn(
+                        "w-full text-left flex items-center gap-3 p-3 rounded-lg border-2 transition-all",
+                        picked
+                          ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)]"
+                          : "border-[var(--color-border)] hover:border-[var(--color-primary)]/50",
                       )}
-                    </Button>
-                  </div>
-                ))}
+                    >
+                      <div className="w-10 h-10 rounded-full bg-[var(--color-primary-soft)] flex items-center justify-center text-[var(--color-primary)] font-medium text-sm shrink-0">
+                        {(applicant.cleanerName ?? "?").charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">
+                          {applicant.cleanerName ?? "Nhân viên"}
+                        </p>
+                        <p className="text-xs text-[var(--color-text-muted)]">
+                          {applicant.cleanerRating != null
+                            ? `★ ${Number(applicant.cleanerRating).toFixed(1)}`
+                            : "Chưa có đánh giá"}{" "}
+                          · {applicant.completedJobs ?? 0} đơn
+                        </p>
+                      </div>
+                      {picked && (
+                        <UserCheck className="w-5 h-5 text-[var(--color-primary)] shrink-0" />
+                      )}
+                    </button>
+                  );
+                })}
               </div>
+              <Button
+                className="w-full mt-4"
+                disabled={selecting || selectedCleanerIds.length === 0}
+                onClick={handleConfirmSelection}
+              >
+                {selecting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  `Xác nhận chọn ${selectedCleanerIds.length > 0 ? `(${selectedCleanerIds.length})` : ""}`
+                )}
+              </Button>
             </Card>
           )}
 
@@ -429,16 +461,24 @@ export default function CustomerOrderDetailPage({
               {formatOrderDate(order.scheduledDate)} · {order.scheduledTime}
             </p>
             <p className="text-sm text-[var(--color-text-muted)] mt-3">
+              Thời lượng
+            </p>
+            <p className="font-medium">
+              {order.durationHours ?? "—"} giờ · {order.numCleaners ?? 1} nhân viên
+            </p>
+            <p className="text-sm text-[var(--color-text-muted)] mt-3">
               {t("customer.orders.cleaner")}
             </p>
             <p className="font-medium">
-              {order.cleanerName
-                ? order.cleanerName
-                : order.status === "PENDING"
-                  ? t("customer.orders.notAssigned")
-                  : order.status === "ON_HOLD_PAYMENT"
-                    ? "Đang chờ xác nhận thanh toán"
-                    : t("customer.orders.notAssigned")}
+              {order.cleanerNames && order.cleanerNames.length > 0
+                ? order.cleanerNames.join(", ")
+                : order.cleanerName
+                  ? order.cleanerName
+                  : order.status === "PENDING"
+                    ? t("customer.orders.notAssigned")
+                    : order.status === "ON_HOLD_PAYMENT"
+                      ? "Đang chờ xác nhận thanh toán"
+                      : t("customer.orders.notAssigned")}
             </p>
             {order.status === "PENDING" && (
               <p className="text-xs text-amber-600 mt-2">
