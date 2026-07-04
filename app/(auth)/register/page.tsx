@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Eye, EyeOff, Lock, Phone, User as UserIcon } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input, FormField } from "@/components/ui/Input";
@@ -17,6 +18,7 @@ export default function RegisterPage() {
   const { login, register, isLoading } = useAuthApi();
   const setAuthSession = useAuthStore((state) => state.login);
   const [form, setForm] = useState({ fullName: "", email: "", phone: "", password: "" });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
 
   const getErrorMessage = (err: any) => {
@@ -55,51 +57,72 @@ export default function RegisterPage() {
 
   return (
     <Card padding="lg" className="shadow-[var(--shadow-lg)]">
-      <h1 className="text-2xl font-bold text-[var(--color-text)] mb-6">{t("auth.registerTitle")}</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-[var(--color-text)] mb-1.5">{t("auth.registerTitle")}</h1>
+      <p className="text-sm text-[var(--color-text-muted)] mb-7">{t("auth.hint")}</p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <FormField label={t("auth.fullName")}>
-          <Input
-            value={form.fullName}
-            onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-            placeholder={t("auth.fullNamePlaceholder")}
-            required
-            disabled={isLoading}
-          />
+          <div className="relative">
+            <UserIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-text-muted)]" />
+            <Input
+              value={form.fullName}
+              onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+              placeholder={t("auth.fullNamePlaceholder")}
+              required
+              disabled={isLoading}
+              className="pl-10"
+            />
+          </div>
         </FormField>
         <FormField label={t("auth.phone")}>
-          <Input
-            type="tel"
-            value={form.phone}
-            onChange={(e) => setForm({ ...form, phone: e.target.value })}
-            placeholder={t("auth.phoneNumberPlaceholder")}
-            required
-            disabled={isLoading}
-          />
+          <div className="relative">
+            <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-text-muted)]" />
+            <Input
+              type="tel"
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              placeholder={t("auth.phoneNumberPlaceholder")}
+              required
+              disabled={isLoading}
+              className="pl-10"
+            />
+          </div>
         </FormField>
         <FormField label={t("auth.password")}>
-          <Input
-            type="password"
-            value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
-            placeholder={t("auth.passwordPlaceholder")}
-            required
-            disabled={isLoading}
-          />
+          <div className="relative">
+            <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-text-muted)]" />
+            <Input
+              type={showPassword ? "text" : "password"}
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              placeholder={t("auth.passwordPlaceholder")}
+              required
+              disabled={isLoading}
+              className="pl-10 pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors"
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
         </FormField>
         {error ? (
-          <p className="rounded-[var(--radius-md)] bg-[var(--color-danger)]/10 px-3 py-2 text-sm text-[var(--color-danger)]">
+          <p className="animate-fade-in rounded-[var(--radius-md)] bg-[var(--color-danger-soft)] px-3.5 py-2.5 text-sm font-medium text-[var(--color-danger)]">
             {error}
           </p>
         ) : null}
-        <Button type="submit" className="w-full" disabled={isLoading}>
+        <Button type="submit" size="lg" className="w-full" loading={isLoading}>
           {isLoading ? "Đang đăng ký..." : t("common.register")}
         </Button>
       </form>
 
-      <p className="text-center text-sm text-[var(--color-text-secondary)] mt-6">
+      <p className="text-center text-sm text-[var(--color-text-secondary)] mt-7">
         {t("auth.hasAccount")}{" "}
-        <Link href="/login" className="text-[var(--color-primary)] font-medium hover:underline">
+        <Link href="/login" className="text-[var(--color-primary)] font-semibold hover:underline">
           {t("common.login")}
         </Link>
       </p>

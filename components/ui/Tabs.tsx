@@ -22,20 +22,23 @@ export function Tabs({ tabs, defaultTab, className }: TabsProps) {
 
   return (
     <div className={className}>
-      <div className="flex gap-1 border-b border-[var(--color-border)] mb-4 overflow-x-auto">
+      <div className="flex gap-1 border-b border-[var(--color-border)] mb-5 overflow-x-auto no-scrollbar">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             type="button"
             onClick={() => setActive(tab.id)}
             className={cn(
-              "px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors",
+              "relative px-4 py-2.5 text-sm font-semibold whitespace-nowrap transition-colors",
               active === tab.id
-                ? "border-[var(--color-primary)] text-[var(--color-primary)]"
-                : "border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text)]",
+                ? "text-[var(--color-primary)]"
+                : "text-[var(--color-text-muted)] hover:text-[var(--color-text)]",
             )}
           >
             {tab.label}
+            {active === tab.id && (
+              <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-[var(--color-primary)]" />
+            )}
           </button>
         ))}
       </div>

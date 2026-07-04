@@ -47,7 +47,7 @@ export default function LandingPage() {
           <div className="absolute inset-x-0 top-0 h-72 bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.16),transparent_40%)] pointer-events-none" />
           <div className="max-w-6xl mx-auto px-4 py-20 lg:py-28 relative">
             <div className="grid gap-10 lg:grid-cols-[1.2fr_0.95fr] items-center">
-              <div className="max-w-2xl">
+              <div className="max-w-2xl animate-fade-up">
                 <span className="inline-flex items-center gap-2 rounded-full bg-[var(--color-primary-soft)] px-4 py-2 text-sm font-semibold text-[var(--color-primary)] shadow-sm mb-6">
                   <Sparkles className="w-4 h-4" />
                   Dịch vụ dọn dẹp chuyên nghiệp cho ngôi nhà của bạn
@@ -62,22 +62,22 @@ export default function LandingPage() {
                 </p>
                 <div className="flex flex-wrap gap-4">
                   <Link href="/register">
-                    <Button size="lg" className="gap-2">
+                    <Button size="xl" className="gap-2">
                       Đặt lịch ngay
                       <ArrowRight className="w-4 h-4" />
                     </Button>
                   </Link>
                   <Link href="/login">
-                    <Button variant="outline" size="lg">
+                    <Button variant="outline" size="xl">
                       Đăng nhập
                     </Button>
                   </Link>
                 </div>
               </div>
 
-              <div className="relative">
-                <div className="absolute -left-10 -top-10 h-44 w-44 rounded-full bg-blue-500/20 blur-3xl" />
-                <div className="absolute -right-12 -bottom-10 h-52 w-52 rounded-full bg-violet-500/20 blur-3xl" />
+              <div className="relative animate-fade-in">
+                <div className="absolute -left-10 -top-10 h-44 w-44 rounded-full bg-[var(--color-primary)]/20 blur-3xl" />
+                <div className="absolute -right-12 -bottom-10 h-52 w-52 rounded-full bg-[var(--color-gradient-to)]/20 blur-3xl" />
                 <div className="relative overflow-hidden rounded-[2rem] border border-white/30 bg-gradient-to-br from-white via-slate-100 to-slate-50 shadow-[0_40px_120px_-40px_rgba(15,23,42,0.2)]">
                   <Image
                     src="/images/screen.png"
@@ -96,7 +96,7 @@ export default function LandingPage() {
                 return (
                   <div
                     key={item.label}
-                    className="rounded-[1.5rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 text-center shadow-[var(--shadow-sm)]"
+                    className="rounded-[var(--radius-2xl)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 text-center shadow-[var(--shadow-xs)] transition-all duration-300 hover:shadow-[var(--shadow-md)] hover:-translate-y-0.5"
                   >
                     <Icon className="w-10 h-10 text-[var(--color-primary)] mx-auto mb-4" />
                     <p className="text-3xl font-bold text-[var(--color-text)]">
@@ -161,7 +161,7 @@ export default function LandingPage() {
                   return (
                     <div
                       key={step.title}
-                      className="flex gap-4 rounded-[1.5rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-6"
+                      className="flex gap-4 rounded-[var(--radius-2xl)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-xs)] transition-all duration-300 hover:shadow-[var(--shadow-md)] hover:-translate-y-0.5"
                     >
                       <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
                         <Icon className="w-6 h-6" />

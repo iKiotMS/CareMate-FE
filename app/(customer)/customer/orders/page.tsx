@@ -3,10 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { FilterTabs } from "@/components/shared/EmptyState";
+import { FilterTabs, EmptyState } from "@/components/shared/EmptyState";
+import { ErrorState } from "@/components/shared/ErrorState";
 import { OrderStatusBadge } from "@/components/shared/OrderStatusBadge";
 import { DataTable, TableRow, TableCell } from "@/components/ui/DataTable";
 import { Button } from "@/components/ui/Button";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { t } from "@/lib/i18n";
 import { useCustomerOrders } from "@/hooks/useApi";
 import { formatOrderDate, orderIdShort } from "@/lib/format";
@@ -15,7 +17,6 @@ import {
   CheckCircle2,
   Clock3,
   CreditCard,
-  Loader2,
   PackageCheck,
   PauseCircle,
   Timer,
@@ -137,20 +138,21 @@ export default function CustomerOrdersPage() {
       <FilterTabs tabs={FILTERS} active={filter} onChange={setFilter} className="mb-5" />
 
       {isLoading ? (
-        <div className="flex items-center gap-2 text-[var(--color-text-muted)]">
-          <Loader2 className="w-5 h-5 animate-spin" /> {t("common.loading")}
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-20 w-full rounded-[var(--radius-lg)]" />
+          ))}
         </div>
       ) : isError ? (
-        <p className="text-red-600">
-          Không tải được đơn hàng.{" "}
-          <button type="button" className="underline" onClick={() => refetch()}>Thử lại</button>
-        </p>
+        <ErrorState message="Không tải được đơn hàng." onRetry={() => refetch()} />
       ) : list.length === 0 ? (
-        <div className="rounded-[var(--radius-lg)] border border-dashed border-[var(--color-border)] p-8 text-center">
-          <p className="text-[var(--color-text-muted)] mb-3">{t("common.noData")}</p>
-          <Link href="/customer/book">
-            <Button size="sm">Đặt dịch vụ</Button>
-          </Link>
+        <div className="rounded-[var(--radius-xl)] border border-dashed border-[var(--color-border)] p-8">
+          <EmptyState title={t("common.noData")} description="Đặt dịch vụ dọn dẹp đầu tiên của bạn ngay hôm nay." />
+          <div className="flex justify-center">
+            <Link href="/customer/book">
+              <Button>Đặt dịch vụ</Button>
+            </Link>
+          </div>
         </div>
       ) : (
         <>
@@ -158,7 +160,7 @@ export default function CustomerOrdersPage() {
           <div className="sm:hidden space-y-3">
             {pageItems.map((o) => (
               <Link key={o._id} href={`/customer/orders/${o._id}`} className="block">
-                <div className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 hover:border-[var(--color-primary)]/40 transition-colors active:bg-[var(--color-surface-hover)]">
+                <div className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-xs)] transition-all duration-150 hover:border-[var(--color-primary)]/40 hover:shadow-[var(--shadow-sm)] active:scale-[0.99]">
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <span className="font-mono text-xs text-[var(--color-text-muted)]">#{orderIdShort(o._id)}</span>
                     <OrderStatusBadge status={o.status as OrderStatus} />
@@ -266,13 +268,15 @@ function StatusStat({
   );
 
   const className =
-    "flex items-center justify-between rounded-[var(--radius-lg)] border p-3 bg-[var(--color-surface)] " +
-    (active ? "border-[var(--color-primary)] shadow-[var(--shadow-sm)]" : "border-[var(--color-border)]");
+    "flex items-center justify-between rounded-[var(--radius-lg)] border p-3 bg-[var(--color-surface)] transition-all duration-150 " +
+    (active
+      ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)] shadow-[var(--shadow-xs)]"
+      : "border-[var(--color-border)]");
 
   if (!onClick) return <div className={className}>{content}</div>;
 
   return (
-    <button type="button" onClick={onClick} className={`${className} text-left hover:border-[var(--color-primary)]/60`}>
+    <button type="button" onClick={onClick} className={`${className} text-left active:scale-[0.98] hover:border-[var(--color-primary)]/60`}>
       {content}
     </button>
   );

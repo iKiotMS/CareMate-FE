@@ -19,15 +19,18 @@ export function Timeline({ items }: { items: TimelineItem[] }) {
           <div className="flex flex-col items-center">
             <div
               className={cn(
-                "w-8 h-8 rounded-full flex items-center justify-center shrink-0 border-2",
+                "w-8 h-8 rounded-full flex items-center justify-center shrink-0 border-2 transition-colors duration-300",
                 item.done
                   ? "bg-[var(--color-success)] border-[var(--color-success)] text-white"
                   : item.active
-                    ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)]"
+                    ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)] shadow-[0_0_0_4px_var(--color-primary-soft)]"
                     : "border-[var(--color-border)] bg-[var(--color-bg-muted)]",
               )}
             >
-              {item.done && <Check className="w-4 h-4" />}
+              {item.done && <Check className="w-4 h-4" strokeWidth={2.5} />}
+              {item.active && !item.done && (
+                <span className="h-2 w-2 rounded-full bg-[var(--color-primary)]" />
+              )}
             </div>
             {i < items.length - 1 && (
               <div className={cn("w-0.5 flex-1 min-h-[24px] my-1", item.done ? "bg-[var(--color-success)]" : "bg-[var(--color-border)]")} />

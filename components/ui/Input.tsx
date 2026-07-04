@@ -1,15 +1,13 @@
 import { cn } from "@/lib/cn";
 import type { InputHTMLAttributes, TextareaHTMLAttributes, SelectHTMLAttributes } from "react";
 
+const fieldBase =
+  "w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-elevated)] text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] transition-all duration-150 focus:outline-none focus:border-[var(--color-primary)] focus:shadow-[var(--shadow-focus)] hover:border-[var(--color-border-strong)] disabled:opacity-50 disabled:pointer-events-none";
+
 export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
-      className={cn(
-        "w-full h-10 px-3 rounded-[var(--radius-md)] border border-[var(--color-border)]",
-        "bg-[var(--color-bg-elevated)] text-[var(--color-text)] placeholder:text-[var(--color-text-muted)]",
-        "focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent",
-        className,
-      )}
+      className={cn(fieldBase, "h-11 px-3.5 text-[15px]", className)}
       {...props}
     />
   );
@@ -18,12 +16,7 @@ export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElem
 export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <textarea
-      className={cn(
-        "w-full min-h-[100px] px-3 py-2 rounded-[var(--radius-md)] border border-[var(--color-border)]",
-        "bg-[var(--color-bg-elevated)] text-[var(--color-text)] placeholder:text-[var(--color-text-muted)]",
-        "focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent resize-y",
-        className,
-      )}
+      className={cn(fieldBase, "min-h-[100px] px-3.5 py-2.5 text-[15px] resize-y", className)}
       {...props}
     />
   );
@@ -32,12 +25,7 @@ export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTex
 export function Select({ className, children, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <select
-      className={cn(
-        "w-full h-10 px-3 rounded-[var(--radius-md)] border border-[var(--color-border)]",
-        "bg-[var(--color-bg-elevated)] text-[var(--color-text)]",
-        "focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]",
-        className,
-      )}
+      className={cn(fieldBase, "h-11 px-3.5 text-[15px]", className)}
       {...props}
     >
       {children}

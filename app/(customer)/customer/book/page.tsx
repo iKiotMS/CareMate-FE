@@ -23,7 +23,7 @@ import {
   useUser,
 } from "@/hooks/useApi";
 import { getApiErrorMessage } from "@/lib/api-errors";
-import { Check, Upload, Loader2, MapPin, Plus } from "lucide-react";
+import { Check, Upload, Loader2, MapPin, Plus, ShieldCheck, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { toast } from "sonner";
 import type { UserAddress } from "@/types";
@@ -260,7 +260,7 @@ export default function BookCleaningPage() {
       <PageHeader title={t("customer.book.title")} />
 
       {error && (
-        <div className="mb-4 max-w-2xl p-3 rounded-lg bg-red-50 text-red-700 text-sm border border-red-200">
+        <div className="mb-4 max-w-2xl animate-fade-in rounded-[var(--radius-lg)] border border-[var(--color-danger)]/20 bg-[var(--color-danger-soft)] p-3.5 text-sm font-medium text-[var(--color-danger)]">
           {error}
         </div>
       )}
@@ -269,7 +269,7 @@ export default function BookCleaningPage() {
 
       <Card padding="lg" className="max-w-4xl">
         {step === 1 && (
-          <div className="space-y-4">
+          <div className="space-y-4 animate-fade-up">
             <FormField label={t("customer.book.date")} required>
               <Input
                 type="date"
@@ -280,9 +280,9 @@ export default function BookCleaningPage() {
                   setForm({ ...form, date: e.target.value });
                   setStep1Errors((prev) => ({ ...prev, date: undefined }));
                 }}
-                className={step1Errors.date ? "border-red-500" : ""}
+                className={step1Errors.date ? "border-[var(--color-danger)]" : ""}
               />
-              {step1Errors.date && <p className="mt-1 text-xs text-red-600">{step1Errors.date}</p>}
+              {step1Errors.date && <p className="mt-1 text-xs text-[var(--color-danger)]">{step1Errors.date}</p>}
             </FormField>
             <FormField label="Giờ bắt đầu" required>
               <Select
@@ -291,7 +291,7 @@ export default function BookCleaningPage() {
                   setForm({ ...form, time: e.target.value });
                   setStep1Errors((prev) => ({ ...prev, time: undefined }));
                 }}
-                className={step1Errors.time ? "border-red-500" : ""}
+                className={step1Errors.time ? "border-[var(--color-danger)]" : ""}
               >
                 <option value="">— Chọn giờ bắt đầu —</option>
                 {START_TIMES.map((s) => {
@@ -306,19 +306,19 @@ export default function BookCleaningPage() {
               <p className="mt-1 text-xs text-[var(--color-text-muted)]">
                 Thời lượng dọn được chọn ở bước sau.
               </p>
-              {step1Errors.time && <p className="mt-1 text-xs text-red-600">{step1Errors.time}</p>}
+              {step1Errors.time && <p className="mt-1 text-xs text-[var(--color-danger)]">{step1Errors.time}</p>}
             </FormField>
             <div>
               <p className="text-sm font-medium text-[var(--color-text)] mb-2">
-                {t("customer.book.address")} <span className="text-red-500">*</span>
+                {t("customer.book.address")} <span className="text-[var(--color-danger)]">*</span>
               </p>
 
               {step1Errors.address && (
-                <p className="mb-2 text-xs text-red-600">{step1Errors.address}</p>
+                <p className="mb-2 text-xs text-[var(--color-danger)]">{step1Errors.address}</p>
               )}
 
               {savedAddresses.length === 0 && !showManualInput && (
-                <p className="mb-2 text-sm text-amber-600">
+                <p className="mb-2 text-sm text-[var(--color-warning)]">
                   Bạn chưa có địa chỉ đã lưu.{" "}
                   <a href="/customer/profile" className="text-[var(--color-primary)] underline">
                     Thêm địa chỉ trong hồ sơ
@@ -335,10 +335,10 @@ export default function BookCleaningPage() {
                       type="button"
                       onClick={() => handleSelectSavedAddress(addr)}
                       className={cn(
-                        "w-full text-left flex items-start gap-3 p-3 rounded-[var(--radius-lg)] border-2 transition-all",
+                        "w-full text-left flex items-start gap-3 p-3.5 rounded-[var(--radius-lg)] border-2 transition-all duration-150 active:scale-[0.99]",
                         selectedAddressId === addr._id
-                          ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)]"
-                          : "border-[var(--color-border)] hover:border-[var(--color-primary)]/50",
+                          ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)] shadow-[var(--shadow-xs)]"
+                          : "border-[var(--color-border)] hover:border-[var(--color-primary)]/50 hover:bg-[var(--color-surface-hover)]",
                       )}
                     >
                       <MapPin
@@ -440,14 +440,15 @@ export default function BookCleaningPage() {
         )}
 
         {step === 2 && (
-          <div>
+          <div className="animate-fade-up">
             {tasksLoading ? (
-              <div className="flex items-center gap-2 text-sm text-[var(--color-text-muted)]">
-                <Loader2 className="w-4 h-4 animate-spin" /> Đang tải danh mục
-                công việc...
+              <div className="grid sm:grid-cols-2 gap-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="skeleton-shimmer animate-shimmer h-20 rounded-[var(--radius-lg)]" />
+                ))}
               </div>
             ) : activeTasks.length === 0 ? (
-              <p className="text-sm text-amber-600">
+              <p className="text-sm text-[var(--color-warning)]">
                 Chưa có công việc. Khởi động BE để seed TaskCatalog.
               </p>
             ) : (
@@ -467,10 +468,10 @@ export default function BookCleaningPage() {
                           setStep2Errors((prev) => ({ ...prev, tasks: undefined }));
                         }}
                         className={cn(
-                          "text-left p-4 rounded-[var(--radius-lg)] border-2 transition-all",
+                          "text-left p-4 rounded-[var(--radius-lg)] border-2 transition-all duration-150 active:scale-[0.99]",
                           selected
-                            ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)]"
-                            : "border-[var(--color-border)] hover:border-[var(--color-primary)]/50",
+                            ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)] shadow-[var(--shadow-xs)]"
+                            : "border-[var(--color-border)] hover:border-[var(--color-primary)]/50 hover:bg-[var(--color-surface-hover)]",
                         )}
                       >
                         <div className="flex items-start justify-between gap-2">
@@ -485,7 +486,9 @@ export default function BookCleaningPage() {
                             )}
                           </div>
                           {selected && (
-                            <Check className="w-5 h-5 text-[var(--color-primary)] shrink-0" />
+                            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)] text-white">
+                              <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                            </span>
                           )}
                         </div>
                       </button>
@@ -494,13 +497,13 @@ export default function BookCleaningPage() {
                 </div>
 
                 {step2Errors.tasks && (
-                  <p className="mt-2 text-xs text-red-600">{step2Errors.tasks}</p>
+                  <p className="mt-2 text-xs text-[var(--color-danger)]">{step2Errors.tasks}</p>
                 )}
 
                 {/* Duration (hours) */}
                 <div className="mt-6">
                   <p className="text-sm font-medium text-[var(--color-text)] mb-2">
-                    Thời lượng làm việc <span className="text-red-500">*</span>
+                    Thời lượng làm việc <span className="text-[var(--color-danger)]">*</span>
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {DURATION_OPTIONS.map((h) => (
@@ -509,10 +512,10 @@ export default function BookCleaningPage() {
                         type="button"
                         onClick={() => setForm((f) => ({ ...f, durationHours: h }))}
                         className={cn(
-                          "px-4 py-2 rounded-[var(--radius-lg)] border-2 text-sm font-medium transition-all",
+                          "px-4 py-2 rounded-full border-2 text-sm font-semibold transition-all duration-150 active:scale-95",
                           form.durationHours === h
-                            ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)] text-[var(--color-primary)]"
-                            : "border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-primary)]/50",
+                            ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)] text-[var(--color-primary)] shadow-[var(--shadow-xs)]"
+                            : "border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-primary)]/50 hover:bg-[var(--color-surface-hover)]",
                         )}
                       >
                         {h} giờ
@@ -524,7 +527,7 @@ export default function BookCleaningPage() {
                 {/* Number of cleaners */}
                 <div className="mt-5">
                   <p className="text-sm font-medium text-[var(--color-text)] mb-2">
-                    Số lượng nhân viên <span className="text-red-500">*</span>
+                    Số lượng nhân viên <span className="text-[var(--color-danger)]">*</span>
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {CLEANER_COUNT_OPTIONS.map((n) => (
@@ -533,10 +536,10 @@ export default function BookCleaningPage() {
                         type="button"
                         onClick={() => setForm((f) => ({ ...f, numCleaners: n }))}
                         className={cn(
-                          "px-4 py-2 rounded-[var(--radius-lg)] border-2 text-sm font-medium transition-all",
+                          "px-4 py-2 rounded-full border-2 text-sm font-semibold transition-all duration-150 active:scale-95",
                           form.numCleaners === n
-                            ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)] text-[var(--color-primary)]"
-                            : "border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-primary)]/50",
+                            ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)] text-[var(--color-primary)] shadow-[var(--shadow-xs)]"
+                            : "border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-primary)]/50 hover:bg-[var(--color-surface-hover)]",
                         )}
                       >
                         {n} người
@@ -551,7 +554,7 @@ export default function BookCleaningPage() {
                 {/* Area */}
                 <div className="mt-5">
                   <p className="text-sm font-medium text-[var(--color-text)] mb-2">
-                    Diện tích cần dọn dẹp <span className="text-red-500">*</span>
+                    Diện tích cần dọn dẹp <span className="text-[var(--color-danger)]">*</span>
                   </p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {AREA_OPTIONS.map((opt, idx) => (
@@ -563,10 +566,10 @@ export default function BookCleaningPage() {
                           setStep2Errors((prev) => ({ ...prev, area: undefined }));
                         }}
                         className={cn(
-                          "flex flex-col items-center gap-1 px-3 py-3 rounded-[var(--radius-lg)] border-2 text-sm font-medium transition-all",
+                          "flex flex-col items-center gap-1 px-3 py-3 rounded-[var(--radius-lg)] border-2 text-sm font-medium transition-all duration-150 active:scale-95",
                           form.areaOptionIdx === idx
-                            ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)] text-[var(--color-primary)]"
-                            : "border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-primary)]/50",
+                            ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)] text-[var(--color-primary)] shadow-[var(--shadow-xs)]"
+                            : "border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-primary)]/50 hover:bg-[var(--color-surface-hover)]",
                         )}
                       >
                         <span className="font-semibold">{opt.label}</span>
@@ -576,11 +579,11 @@ export default function BookCleaningPage() {
                       </button>
                     ))}
                   </div>
-                  {step2Errors.area && <p className="mt-2 text-xs text-red-600">{step2Errors.area}</p>}
+                  {step2Errors.area && <p className="mt-2 text-xs text-[var(--color-danger)]">{step2Errors.area}</p>}
                 </div>
 
                 {/* Price summary */}
-                <div className="mt-5 rounded-lg bg-[var(--color-primary)]/5 px-4 py-3 border border-[var(--color-primary)]/20 space-y-1">
+                <div className="mt-5 rounded-[var(--radius-xl)] bg-[var(--color-primary-soft)] px-4 py-4 border border-[var(--color-primary)]/15 space-y-1.5">
                   <div className="flex items-center justify-between text-xs text-[var(--color-text-secondary)]">
                     <span>Giờ công ({form.durationHours} giờ × {form.numCleaners} người)</span>
                     <span>{(HOURLY_RATE * form.durationHours * form.numCleaners).toLocaleString("vi-VN")} ₫</span>
@@ -589,11 +592,11 @@ export default function BookCleaningPage() {
                     <span>Phụ phí diện tích ({selectedArea ? selectedArea.label : "—"})</span>
                     <span>{(AREA_RATE * areaM2Num).toLocaleString("vi-VN")} ₫</span>
                   </div>
-                  <div className="flex items-center justify-between border-t border-[var(--color-primary)]/20 pt-2 mt-1">
-                    <span className="text-sm font-medium text-[var(--color-text)]">
+                  <div className="flex items-center justify-between border-t border-[var(--color-primary)]/15 pt-2.5 mt-1.5">
+                    <span className="text-sm font-semibold text-[var(--color-text)]">
                       Tổng tiền
                     </span>
-                    <span className="text-lg font-bold text-[var(--color-primary)]">
+                    <span className="text-xl font-bold tracking-tight text-[var(--color-primary)]">
                       {totalAmount.toLocaleString("vi-VN")} ₫
                     </span>
                   </div>
@@ -612,7 +615,7 @@ export default function BookCleaningPage() {
         )}
 
         {step === 3 && (
-          <div>
+          <div className="animate-fade-up">
             <input
               ref={fileRef}
               type="file"
@@ -631,17 +634,19 @@ export default function BookCleaningPage() {
               type="button"
               onClick={() => fileRef.current?.click()}
               disabled={selectedFiles.length + photoUrls.length >= MAX_PHOTOS}
-              className="w-full border-2 border-dashed border-[var(--color-border)] rounded-[var(--radius-xl)] p-6 sm:p-12 text-center hover:border-[var(--color-primary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full border-2 border-dashed border-[var(--color-border)] rounded-[var(--radius-xl)] p-6 sm:p-12 text-center transition-all duration-150 hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-soft)] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Upload className="w-10 h-10 mx-auto text-[var(--color-text-muted)] mb-3" />
-              <p className="text-sm text-[var(--color-text-secondary)]">
+              <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--color-primary-soft)]">
+                <Upload className="w-6 h-6 text-[var(--color-primary)]" />
+              </div>
+              <p className="text-sm font-medium text-[var(--color-text-secondary)]">
                 {selectedFiles.length + photoUrls.length >= MAX_PHOTOS
                   ? `Đã đạt giới hạn ${MAX_PHOTOS} ảnh`
                   : `Chọn ảnh (tùy chọn) · Còn ${MAX_PHOTOS - selectedFiles.length - photoUrls.length} ảnh`}
               </p>
             </button>
             {(selectedFiles.length > 0 || photoUrls.length > 0) && (
-              <p className="text-sm text-[var(--color-success)] mt-2">
+              <p className="text-sm font-medium text-[var(--color-success)] mt-2">
                 {selectedFiles.length} file chờ upload · {photoUrls.length} URL đã có
               </p>
             )}
@@ -650,7 +655,7 @@ export default function BookCleaningPage() {
                 {previews.map((src, i) => (
                   <div
                     key={i}
-                    className="relative rounded-[var(--radius-md)] overflow-hidden border"
+                    className="group relative rounded-[var(--radius-lg)] overflow-hidden border border-[var(--color-border)] shadow-[var(--shadow-xs)]"
                   >
                     <img
                       src={src}
@@ -660,10 +665,10 @@ export default function BookCleaningPage() {
                     <button
                       type="button"
                       onClick={() => removeSelectedFile(i)}
-                      className="absolute top-1 right-1 bg-white/80 dark:bg-gray-800/80 rounded-full p-2 text-xs leading-none"
+                      className="absolute top-1.5 right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-slate-900/70 text-white backdrop-blur-sm transition-colors hover:bg-slate-900/90"
                       aria-label="Remove photo"
                     >
-                      ✕
+                      <X className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 ))}
@@ -675,7 +680,7 @@ export default function BookCleaningPage() {
                 {photoUrls.map((src, i) => (
                   <div
                     key={`url-${i}`}
-                    className="rounded-[var(--radius-md)] overflow-hidden border"
+                    className="rounded-[var(--radius-lg)] overflow-hidden border border-[var(--color-border)] shadow-[var(--shadow-xs)]"
                   >
                     <img
                       src={src}
@@ -690,44 +695,55 @@ export default function BookCleaningPage() {
         )}
 
         {step === 4 && (
-          <div className="space-y-4">
-            <h3 className="font-semibold text-[var(--color-text)]">
+          <div className="space-y-4 animate-fade-up">
+            <h3 className="text-lg font-semibold tracking-tight text-[var(--color-text)]">
               {t("customer.book.summary")}
             </h3>
-            <div className="rounded-[var(--radius-lg)] bg-[var(--color-bg-muted)] p-4 space-y-2 text-sm">
-              <p>
-                <strong>{t("customer.book.date")}:</strong>{" "}
-                {form.date ? new Date(form.date + "T00:00:00").toLocaleDateString("vi-VN", { dateStyle: "long" }) : ""}
-              </p>
-              <p>
-                <strong>Giờ bắt đầu:</strong> {form.time}
-              </p>
-              <p>
-                <strong>{t("customer.book.address")}:</strong> {form.address}
-              </p>
-              <p>
-                <strong>Thời lượng:</strong> {form.durationHours} giờ
-              </p>
-              <p>
-                <strong>Số nhân viên:</strong> {form.numCleaners} người
-              </p>
-              <p>
-                <strong>Diện tích:</strong> {selectedArea ? selectedArea.label : "—"}
-              </p>
-              <p>
-                <strong>{t("customer.book.totalTasks")}:</strong>{" "}
-                {selectedTasks.length}
-              </p>
-              <ul className="list-disc list-inside text-[var(--color-text-secondary)]">
-                {selectedTasks.map((task) => (
-                  <li key={task._id}>{task.name}</li>
-                ))}
-              </ul>
+            <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-bg-muted)] p-4 space-y-2.5 text-sm">
+              <div className="flex justify-between gap-3">
+                <span className="text-[var(--color-text-muted)]">{t("customer.book.date")}</span>
+                <span className="font-medium text-[var(--color-text)] text-right">
+                  {form.date ? new Date(form.date + "T00:00:00").toLocaleDateString("vi-VN", { dateStyle: "long" }) : ""}
+                </span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span className="text-[var(--color-text-muted)]">Giờ bắt đầu</span>
+                <span className="font-medium text-[var(--color-text)]">{form.time}</span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span className="text-[var(--color-text-muted)] shrink-0">{t("customer.book.address")}</span>
+                <span className="font-medium text-[var(--color-text)] text-right">{form.address}</span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span className="text-[var(--color-text-muted)]">Thời lượng</span>
+                <span className="font-medium text-[var(--color-text)]">{form.durationHours} giờ</span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span className="text-[var(--color-text-muted)]">Số nhân viên</span>
+                <span className="font-medium text-[var(--color-text)]">{form.numCleaners} người</span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span className="text-[var(--color-text-muted)]">Diện tích</span>
+                <span className="font-medium text-[var(--color-text)]">{selectedArea ? selectedArea.label : "—"}</span>
+              </div>
+              <div className="border-t border-[var(--color-border)] pt-2.5">
+                <p className="text-[var(--color-text-muted)] mb-1.5">
+                  {t("customer.book.totalTasks")} ({selectedTasks.length})
+                </p>
+                <ul className="space-y-1 text-[var(--color-text-secondary)]">
+                  {selectedTasks.map((task) => (
+                    <li key={task._id} className="flex items-center gap-2">
+                      <span className="h-1 w-1 rounded-full bg-[var(--color-text-muted)]" />
+                      {task.name}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
-            <div className="rounded-[var(--radius-lg)] bg-[var(--color-primary)]/5 px-4 py-3 border border-[var(--color-primary)]/20 space-y-1">
+            <div className="rounded-[var(--radius-xl)] bg-[var(--color-primary-soft)] px-4 py-4 border border-[var(--color-primary)]/15 space-y-1.5">
               <div className="flex items-center justify-between text-sm font-semibold text-[var(--color-text)]">
                 <span>Tổng tiền</span>
-                <span className="text-[var(--color-primary)]">{totalAmount.toLocaleString("vi-VN")} ₫</span>
+                <span className="text-xl font-bold tracking-tight text-[var(--color-primary)]">{totalAmount.toLocaleString("vi-VN")} ₫</span>
               </div>
               <div className="flex items-center justify-between text-xs text-[var(--color-text-muted)]">
                 <span>Đặt cọc ngay</span>
@@ -738,13 +754,17 @@ export default function BookCleaningPage() {
                 <span>{Math.max(0, totalAmount - DEPOSIT_AMOUNT).toLocaleString("vi-VN")} ₫</span>
               </div>
             </div>
-            <div className="mt-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 text-sm text-blue-800 dark:text-blue-300">
-              Sau khi đặt đơn, bạn sẽ chọn nhân viên và thanh toán đặt cọc{" "}
-              <strong>{DEPOSIT_AMOUNT.toLocaleString("vi-VN")} ₫</strong> qua QR chuyển khoản.
+            <div className="mt-2 flex items-start gap-2.5 rounded-[var(--radius-lg)] bg-[var(--color-info-soft)] p-3.5 text-sm text-[var(--color-info)]">
+              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>
+                Sau khi đặt đơn, bạn sẽ chọn nhân viên và thanh toán đặt cọc{" "}
+                <strong>{DEPOSIT_AMOUNT.toLocaleString("vi-VN")} ₫</strong> qua QR chuyển khoản.
+              </span>
             </div>
             <Button
               onClick={submitOrder}
               disabled={busy}
+              size="lg"
               className="w-full mt-4"
             >
               {busy ? (
@@ -757,7 +777,7 @@ export default function BookCleaningPage() {
           </div>
         )}
 
-        <div className="flex justify-between mt-8 pt-6 border-t border-[var(--color-border)]">
+        <div className="sticky bottom-0 z-20 -mx-6 -mb-6 mt-8 flex justify-between gap-3 rounded-b-[var(--radius-xl)] border-t border-[var(--color-border)] bg-[var(--color-surface)]/95 px-6 py-4 backdrop-blur-md">
           {step === 1 ? (
             <Button
               variant="outline"
@@ -776,7 +796,7 @@ export default function BookCleaningPage() {
             </Button>
           )}
           {step < 4 ? (
-            <Button onClick={handleNext} disabled={busy}>
+            <Button onClick={handleNext} disabled={busy} className="flex-1 sm:flex-none">
               {t("common.next")}
             </Button>
           ) : null}
