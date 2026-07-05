@@ -67,7 +67,15 @@ export default function CustomerOrderDetailPage({
   const [error, setError] = useState("");
   const [selectedCleanerIds, setSelectedCleanerIds] = useState<string[]>([]);
 
-  if (isLoading) {
+  // The data query is gated on `hasToken()`, which reads a browser cookie and is
+  // therefore always false during SSR but true on the client's first render — that
+  // divergence made the server emit the "not found" markup while the client emitted
+  // the skeleton, causing a hydration mismatch. Render the skeleton until mounted so
+  // the first client render matches the server output.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted || isLoading) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-64" />
@@ -217,9 +225,12 @@ export default function CustomerOrderDetailPage({
     <div>
       <Link
         href="/customer/orders"
-        className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-primary)] hover:underline"
+        className="group mb-4 inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] py-2 pl-2.5 pr-4 text-sm font-medium text-[var(--color-text-secondary)] shadow-[var(--shadow-xs)] transition-all duration-150 hover:border-[var(--color-primary)]/50 hover:text-[var(--color-primary)] hover:shadow-[var(--shadow-sm)] active:scale-[0.98]"
       >
-        <ArrowLeft className="h-4 w-4" /> {t("common.back")}
+        <span className="grid h-6 w-6 place-items-center rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)] transition-transform duration-150 group-hover:-translate-x-0.5">
+          <ArrowLeft className="h-4 w-4" />
+        </span>
+        {t("common.back")}
       </Link>
 
       {error && (

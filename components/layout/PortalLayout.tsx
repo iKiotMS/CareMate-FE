@@ -86,7 +86,7 @@ export function PortalLayout({
     : [];
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg)] flex">
+    <div className="h-screen overflow-hidden bg-[var(--color-bg)] flex">
       {/* Sidebar overlay mobile */}
       {sidebarOpen && (
         <div
@@ -183,13 +183,15 @@ export function PortalLayout({
           </div>
         </header>
 
-        <main
-          className={cn(
-            "flex-1 p-4 lg:p-6 overflow-auto",
-            isCustomer && "max-w-6xl mx-auto w-full pb-24 lg:pb-6",
-          )}
-        >
-          {children}
+        <main className="flex-1 min-h-0 overflow-y-auto">
+          <div
+            className={cn(
+              "p-4 lg:p-6",
+              isCustomer && "max-w-6xl mx-auto w-full pb-24 lg:pb-6",
+            )}
+          >
+            {children}
+          </div>
         </main>
       </div>
 

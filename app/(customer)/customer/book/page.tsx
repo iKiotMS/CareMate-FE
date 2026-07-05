@@ -505,22 +505,35 @@ export default function BookCleaningPage() {
                   <p className="text-sm font-medium text-[var(--color-text)] mb-2">
                     Thời lượng làm việc <span className="text-[var(--color-danger)]">*</span>
                   </p>
-                  <div className="flex flex-wrap gap-2">
-                    {DURATION_OPTIONS.map((h) => (
-                      <button
-                        key={h}
-                        type="button"
-                        onClick={() => setForm((f) => ({ ...f, durationHours: h }))}
-                        className={cn(
-                          "px-4 py-2 rounded-full border-2 text-sm font-semibold transition-all duration-150 active:scale-95",
-                          form.durationHours === h
-                            ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)] text-[var(--color-primary)] shadow-[var(--shadow-xs)]"
-                            : "border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-primary)]/50 hover:bg-[var(--color-surface-hover)]",
-                        )}
-                      >
-                        {h} giờ
-                      </button>
-                    ))}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                    {DURATION_OPTIONS.map((h) => {
+                      const active = form.durationHours === h;
+                      return (
+                        <button
+                          key={h}
+                          type="button"
+                          onClick={() => setForm((f) => ({ ...f, durationHours: h }))}
+                          className={cn(
+                            "flex flex-col items-start gap-0.5 rounded-[var(--radius-lg)] border-2 px-4 py-3 text-left transition-all duration-150 active:scale-[0.98]",
+                            active
+                              ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)] shadow-[var(--shadow-xs)]"
+                              : "border-[var(--color-border)] hover:border-[var(--color-primary)]/50 hover:bg-[var(--color-surface-hover)]",
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "text-base font-bold",
+                              active ? "text-[var(--color-primary)]" : "text-[var(--color-text)]",
+                            )}
+                          >
+                            {h} giờ
+                          </span>
+                          <span className="text-xs text-[var(--color-text-muted)]">
+                            Tiền công {(HOURLY_RATE * h * form.numCleaners).toLocaleString("vi-VN")} ₫
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -777,29 +790,39 @@ export default function BookCleaningPage() {
           </div>
         )}
 
-        <div className="sticky bottom-0 z-20 -mx-6 -mb-6 mt-8 flex justify-between gap-3 rounded-b-[var(--radius-xl)] border-t border-[var(--color-border)] bg-[var(--color-surface)]/95 px-6 py-4 backdrop-blur-md">
-          {step === 1 ? (
-            <Button
-              variant="outline"
-              onClick={() => router.push("/customer")}
-              disabled={busy}
-            >
-              {t("common.cancel")}
-            </Button>
-          ) : (
-            <Button
-              variant="outline"
-              onClick={() => setStep((s) => Math.max(1, s - 1))}
-              disabled={busy}
-            >
-              {t("common.previous")}
-            </Button>
+        <div className="sticky bottom-0 z-20 -mx-6 -mb-6 mt-8 rounded-b-[var(--radius-xl)] border-t border-[var(--color-border)] bg-[var(--color-surface)]/95 px-6 py-4 backdrop-blur-md">
+          {selectedArea && totalAmount > 0 && (
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-sm text-[var(--color-text-secondary)]">Tổng tiền</span>
+              <span className="text-xl font-bold tracking-tight text-[var(--color-primary)]">
+                {totalAmount.toLocaleString("vi-VN")} ₫
+              </span>
+            </div>
           )}
-          {step < 4 ? (
-            <Button onClick={handleNext} disabled={busy} className="flex-1 sm:flex-none">
-              {t("common.next")}
-            </Button>
-          ) : null}
+          <div className="flex items-center justify-between gap-3">
+            {step === 1 ? (
+              <Button
+                variant="outline"
+                onClick={() => router.push("/customer/dashboard")}
+                disabled={busy}
+              >
+                {t("common.cancel")}
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                onClick={() => setStep((s) => Math.max(1, s - 1))}
+                disabled={busy}
+              >
+                {t("common.previous")}
+              </Button>
+            )}
+            {step < 4 ? (
+              <Button onClick={handleNext} disabled={busy} className="flex-1">
+                {t("common.next")}
+              </Button>
+            ) : null}
+          </div>
         </div>
       </Card>
     </div>

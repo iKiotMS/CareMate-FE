@@ -150,6 +150,7 @@ export const vi = {
     password: "Mật khẩu",
     fullName: "Họ và tên",
     phone: "Số điện thoại",
+    confirmPassword: "Xác nhận mật khẩu",
     forgotPassword: "Quên mật khẩu?",
     noAccount: "Chưa có tài khoản?",
     hasAccount: "Đã có tài khoản?",
@@ -157,7 +158,13 @@ export const vi = {
     fullNamePlaceholder: "Nguyễn Văn A",
     emailPlaceholder: "nguyenvana@gmail.com",
     passwordPlaceholder: "********",
+    confirmPasswordPlaceholder: "Nhập lại mật khẩu",
     phoneNumberPlaceholder: "0123456789",
+    captcha: "Mã xác nhận",
+    captchaPlaceholder: "Nhập mã bên trái",
+    captchaRefresh: "Đổi mã khác",
+    passwordMismatch: "Mật khẩu xác nhận không khớp.",
+    captchaMismatch: "Mã xác nhận không đúng.",
   },
   customer: {
     dashboard: {

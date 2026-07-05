@@ -81,6 +81,14 @@ module.exports = {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
         },
+        "marquee-right": {
+          from: { transform: "translateX(-50%)" },
+          to: { transform: "translateX(0)" },
+        },
+        kenburns: {
+          from: { transform: "scale(1) translate(0, 0)" },
+          to: { transform: "scale(1.12) translate(-1.5%, -1.5%)" },
+        },
       },
       animation: {
         "fade-in": "fade-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both",
@@ -88,6 +96,8 @@ module.exports = {
         "scale-in": "scale-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) both",
         "slide-up-sheet": "slide-up-sheet 0.35s cubic-bezier(0.16, 1, 0.3, 1) both",
         shimmer: "shimmer 2s linear infinite",
+        "marquee-right": "marquee-right 45s linear infinite",
+        kenburns: "kenburns 6s ease-out both",
       },
     },
   },

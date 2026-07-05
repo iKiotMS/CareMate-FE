@@ -263,20 +263,29 @@ function StatusStat({
         <span className="block text-xs text-[var(--color-text-muted)]">{label}</span>
         <span className="block text-xl font-bold text-[var(--color-text)]">{value}</span>
       </span>
-      <Icon className="w-5 h-5 text-[var(--color-primary)]" />
+      <span
+        className={
+          "flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors " +
+          (active
+            ? "bg-[var(--color-primary)] text-white"
+            : "bg-[var(--color-primary-soft)] text-[var(--color-primary)]")
+        }
+      >
+        <Icon className="w-4 h-4" />
+      </span>
     </>
   );
 
   const className =
-    "flex items-center justify-between rounded-[var(--radius-lg)] border p-3 bg-[var(--color-surface)] transition-all duration-150 " +
+    "flex items-center justify-between gap-2 rounded-[var(--radius-xl)] border p-3.5 bg-[var(--color-surface)] transition-all duration-150 " +
     (active
-      ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)] shadow-[var(--shadow-xs)]"
-      : "border-[var(--color-border)]");
+      ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)] shadow-[var(--shadow-sm)]"
+      : "border-[var(--color-border)] shadow-[var(--shadow-xs)]");
 
   if (!onClick) return <div className={className}>{content}</div>;
 
   return (
-    <button type="button" onClick={onClick} className={`${className} text-left active:scale-[0.98] hover:border-[var(--color-primary)]/60`}>
+    <button type="button" onClick={onClick} className={`${className} text-left active:scale-[0.98] hover:-translate-y-0.5 hover:border-[var(--color-primary)]/60 hover:shadow-[var(--shadow-md)]`}>
       {content}
     </button>
   );
