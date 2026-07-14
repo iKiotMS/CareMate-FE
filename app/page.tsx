@@ -4,8 +4,11 @@ import { HeroCarousel } from "@/components/landing/HeroCarousel";
 import { ServiceEcosystem } from "@/components/landing/ServiceEcosystem";
 import { JourneySection } from "@/components/landing/JourneySection";
 import { MoreThanApp } from "@/components/landing/MoreThanApp";
+import { usePageView } from "@/hooks/usePageView";
 
 export default function LandingPage() {
+  usePageView("landing");
+
   return (
     <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
       <PublicHeader />

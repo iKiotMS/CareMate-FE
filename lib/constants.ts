@@ -64,6 +64,14 @@ export const HOURLY_RATE = 50_000;
 /** Area surcharge per m² (VND) — must match backend AREA_RATE. */
 export const AREA_RATE = 2_000;
 
+/**
+ * On-site expense consent. **Must match `EXPENSE_CONSENT_TEXT` in the backend's
+ * `common/config/pricing.config.ts`** — the server snapshots its own copy onto the
+ * order, so if these drift the customer agrees to one thing and we record another.
+ */
+export const EXPENSE_CONSENT_TEXT =
+  "Tôi cam kết thanh toán phụ phí khi tới địa điểm dọn dẹp cho nhân công";
+
 /** Selectable area range tiers. areaM2 is the representative value sent to the backend (price = areaM2 × AREA_RATE). */
 export const AREA_OPTIONS = [
   { label: "Dưới 32 m²",  areaM2: 25 },

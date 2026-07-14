@@ -102,13 +102,98 @@ export interface Order {
   depositDeadline?: string | null;
   rating?: number | null;
   review?: string | null;
+
+  // Actual execution window — set at check-in / completion.
+  actualStartAt?: string | null;
+  actualEndAt?: string | null;
+  actualDurationMinutes?: number | null;
+  /** Negative = finished early (never refunded). Positive = overran. */
+  durationVarianceMinutes?: number | null;
+
+  adjustments?: OrderAdjustment[];
+  /** Commissionable: base price + approved overtime. */
+  serviceAmount?: number;
+  /** Reimbursed to the cleaner at 100% — the platform takes no cut. */
+  reimbursableAmount?: number;
   totalAmount: number;
+
+  // Payout snapshot, frozen at COMPLETED.
+  commissionRate?: number | null;
+  platformCommission?: number | null;
+  cleanerPayout?: number | null;
+
   currency: string;
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
   paidAt: string | null;
   createdAt: string;
   updatedAt?: string;
+}
+
+export type AdjustmentKind = "OVERTIME" | "EXPENSE";
+export type AdjustmentStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+/**
+ * A mid-job change to what the customer owes. OVERTIME is service revenue
+ * (commissionable); EXPENSE is money the cleaner already paid out of pocket and
+ * is reimbursed for in full.
+ */
+export interface OrderAdjustment {
+  _id: string;
+  kind: AdjustmentKind;
+  label: string;
+  amount: number;
+  requestedBy: string;
+  evidencePhoto?: string | null;
+  overtimeMinutes?: number | null;
+  status: AdjustmentStatus;
+  resolvedAt?: string | null;
+  rejectionReason?: string | null;
+  createdAt?: string;
+}
+
+/** One cleaner's row in the admin payroll table. */
+export interface CleanerSalary {
+  cleanerId: string;
+  fullName: string;
+  phone: string | null;
+  avatarUrl: string | null;
+  totalOrders: number;
+  /** Pay for work done, after the platform's cut. */
+  serviceEarnings: number;
+  /** Out-of-pocket costs paid back in full — not commissioned, not income. */
+  reimbursements: number;
+  netEarnings: number;
+}
+
+export interface TrafficStats {
+  pages: { page: "landing" | "home"; views: number; uniqueVisitors: number }[];
+  totalViews: number;
+  /** Unique across all pages — NOT the sum of the per-page figures. */
+  uniqueVisitors: number;
+  daily: {
+    date: string;
+    views: number;
+    pages: { page: string; views: number; uniqueVisitors: number }[];
+  }[];
+  logins: {
+    total: number;
+    uniqueUsers: number;
+    failed: { reason: string; count: number }[];
+    activeToday: number;
+  };
+  users: { total: number; newInRange: number };
+}
+
+/** Shared money breakdown returned by every admin financial endpoint. */
+export interface FinancialBreakdown {
+  grossBilled: number;
+  serviceRevenue: number;
+  reimbursements: number;
+  commission: number;
+  cleanerPayout: number;
+  orders: number;
+  currency: "VND";
 }
 
 export type NotificationType =

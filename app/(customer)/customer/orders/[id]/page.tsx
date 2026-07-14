@@ -9,6 +9,10 @@ import { Timeline } from "@/components/shared/Timeline";
 import { StarRating } from "@/components/shared/StarRating";
 import { PhotoGrid } from "@/components/shared/Charts";
 import { CountdownTimer } from "@/components/shared/CountdownTimer";
+import {
+  AdjustmentList,
+  DurationSummary,
+} from "@/components/shared/AdjustmentList";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -447,6 +451,27 @@ export default function CustomerOrderDetailPage({
               <CountdownTimer
                 expiresAt={(finalPaymentInfo as any).expiresAt}
                 label="Hết hạn thanh toán sau"
+              />
+            </Card>
+          )}
+
+          {/* Adjustments — the customer must resolve these before they can review. */}
+          <AdjustmentList
+            orderId={orderId}
+            adjustments={order.adjustments ?? []}
+            canResolve
+          />
+
+          {/* Actual vs booked working time */}
+          {order.actualDurationMinutes != null && (
+            <Card>
+              <h2 className="font-semibold mb-3">
+                {t("adjustment.actualDuration")}
+              </h2>
+              <DurationSummary
+                bookedHours={order.durationHours}
+                actualMinutes={order.actualDurationMinutes}
+                varianceMinutes={order.durationVarianceMinutes}
               />
             </Card>
           )}

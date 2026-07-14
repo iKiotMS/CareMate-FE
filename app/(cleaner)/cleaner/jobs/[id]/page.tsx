@@ -5,6 +5,8 @@ import Link from "next/link";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { OrderStatusBadge } from "@/components/shared/OrderStatusBadge";
 import { ProgressBar } from "@/components/shared/Charts";
+import { AdjustmentList } from "@/components/shared/AdjustmentList";
+import { ExpenseRequestForm } from "@/components/shared/ExpenseRequestForm";
 import { Tabs } from "@/components/ui/Tabs";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -519,6 +521,18 @@ export default function CleanerJobDetailPage({ params }: { params: { id: string 
       {status === "IN_PROGRESS" && (
         <div className="space-y-3">
           <Badge variant="success">Đã check-in thành công</Badge>
+
+          {/* Out-of-pocket costs (parking, building access). Reimbursed at 100%
+              once the customer approves — no commission is taken on them. */}
+          <ExpenseRequestForm orderId={params.id} />
+
+          {(order.adjustments?.length ?? 0) > 0 && (
+            <AdjustmentList
+              orderId={params.id}
+              adjustments={order.adjustments ?? []}
+            />
+          )}
+
           {(order.photosCheckin?.length ?? 0) > 0 && (
             <div>
               <p className="text-sm font-medium text-[var(--color-text-muted)] mb-2">Ảnh check-in tại hiện trường</p>
