@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input, FormField } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { t } from "@/lib/i18n";
 import {
   useUser,
@@ -136,8 +137,9 @@ export default function CustomerProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 py-12">
-        <Loader2 className="w-5 h-5 animate-spin" /> {t("common.loading")}
+      <div className="grid gap-6 max-w-4xl lg:grid-cols-2">
+        <Skeleton className="h-80 w-full rounded-[var(--radius-xl)]" />
+        <Skeleton className="h-80 w-full rounded-[var(--radius-xl)]" />
       </div>
     );
   }
@@ -151,13 +153,13 @@ export default function CustomerProfilePage() {
       <PageHeader title={t("customer.profile.title")} />
       <div className="grid gap-6 max-w-4xl lg:grid-cols-2">
         {/* ── Basic info ── */}
-        <Card>
+        <Card className="animate-fade-up">
           <div className="flex items-center gap-4 mb-6">
-            <div className="w-16 h-16 rounded-full bg-[var(--color-primary-soft)] flex items-center justify-center text-2xl">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[var(--color-gradient-from)] to-[var(--color-gradient-to)] flex items-center justify-center text-2xl shadow-sm">
               👤
             </div>
             <div>
-              <p className="font-bold text-lg">{profile.fullName}</p>
+              <p className="font-bold text-lg tracking-tight text-[var(--color-text)]">{profile.fullName}</p>
               <p className="text-sm text-[var(--color-text-muted)]">{profile.email}</p>
             </div>
           </div>
@@ -218,7 +220,7 @@ export default function CustomerProfilePage() {
         </Card>
 
         {/* ── Address Book ── */}
-        <div className="space-y-4">
+        <div className="space-y-4 animate-fade-up">
           <Card>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -239,7 +241,7 @@ export default function CustomerProfilePage() {
             </div>
 
             {addrError && (
-              <p className="text-sm text-red-600 mb-3">{addrError}</p>
+              <p className="text-sm font-medium text-[var(--color-danger)] mb-3 animate-fade-in">{addrError}</p>
             )}
 
             {/* Add form */}
@@ -314,8 +316,10 @@ export default function CustomerProfilePage() {
 
             {/* Address list */}
             {addresses.length === 0 && !showAddForm ? (
-              <div className="text-center py-6 text-[var(--color-text-muted)]">
-                <MapPin className="w-8 h-8 mx-auto mb-2 opacity-30" />
+              <div className="rounded-[var(--radius-lg)] border border-dashed border-[var(--color-border)] py-8 text-center text-[var(--color-text-muted)]">
+                <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--color-bg-muted)]">
+                  <MapPin className="w-5 h-5" />
+                </div>
                 <p className="text-sm">Chưa có địa chỉ nào. Thêm địa chỉ để đặt đơn nhanh hơn.</p>
               </div>
             ) : (
@@ -324,10 +328,10 @@ export default function CustomerProfilePage() {
                   <li
                     key={addr._id}
                     className={cn(
-                      "flex items-start gap-3 p-3 rounded-[var(--radius-lg)] border transition-all",
+                      "flex items-start gap-3 p-3.5 rounded-[var(--radius-lg)] border transition-all duration-150",
                       addr.isDefault
-                        ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)]"
-                        : "border-[var(--color-border)] bg-[var(--color-bg-muted)]",
+                        ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)] shadow-[var(--shadow-xs)]"
+                        : "border-[var(--color-border)] bg-[var(--color-bg-muted)] hover:border-[var(--color-border-strong)]",
                     )}
                   >
                     <MapPin
@@ -370,7 +374,7 @@ export default function CustomerProfilePage() {
                         title="Xoá địa chỉ"
                         disabled={deleting}
                         onClick={() => handleDelete(addr._id)}
-                        className="p-2.5 rounded-lg hover:bg-red-50 text-[var(--color-text-muted)] hover:text-red-500 transition-colors"
+                        className="p-2.5 rounded-lg hover:bg-[var(--color-danger-soft)] text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -383,7 +387,7 @@ export default function CustomerProfilePage() {
 
           {/* Password card */}
           <Card>
-            <h2 className="font-semibold mb-4">{t("customer.profile.changePassword")}</h2>
+            <h2 className="font-semibold text-[var(--color-text)] mb-4">{t("customer.profile.changePassword")}</h2>
             <form onSubmit={handleChangePassword} className="space-y-0">
               <FormField label={t("customer.profile.currentPassword")}>
                 <Input

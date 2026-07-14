@@ -17,8 +17,8 @@ export function Card({ className, hover, padding = "md", children, ...props }: C
   return (
     <div
       className={cn(
-        "rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-sm)]",
-        hover && "transition-shadow hover:shadow-[var(--shadow-md)]",
+        "rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-xs)]",
+        hover && "transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:shadow-[var(--shadow-md)] hover:-translate-y-0.5 hover:border-[var(--color-border-strong)]",
         paddingClass,
         className,
       )}
@@ -34,7 +34,7 @@ export function CardHeader({ className, ...props }: HTMLAttributes<HTMLDivElemen
 }
 
 export function CardTitle({ className, ...props }: HTMLAttributes<HTMLHeadingElement>) {
-  return <h3 className={cn("text-lg font-semibold text-[var(--color-text)]", className)} {...props} />;
+  return <h3 className={cn("text-lg font-semibold tracking-tight text-[var(--color-text)]", className)} {...props} />;
 }
 
 export function CardDescription({ className, ...props }: HTMLAttributes<HTMLParagraphElement>) {

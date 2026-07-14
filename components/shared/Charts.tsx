@@ -25,7 +25,7 @@ export function SimpleBarChart({
               {formatValue ? formatValue(val) : val}
             </span>
             <div
-              className="w-full rounded-t-[var(--radius-sm)] bg-[var(--color-primary)] transition-all"
+              className="w-full rounded-t-[var(--radius-sm)] bg-gradient-to-t from-[var(--color-primary)] to-[var(--color-primary-hover)] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
               style={{ height: `${Math.max(height, 4)}%` }}
             />
             <span className="text-xs text-[var(--color-text-secondary)]">
@@ -58,7 +58,7 @@ export function ProgressBar({
       )}
       <div className="h-2 rounded-full bg-[var(--color-bg-muted)] overflow-hidden">
         <div
-          className="h-full rounded-full bg-[var(--color-primary)] transition-all"
+          className="h-full rounded-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-primary-hover)] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -86,7 +86,7 @@ export function PhotoGrid({
       {photos.map((src, i) => (
         <div
           key={i}
-          className="aspect-video rounded-[var(--radius-md)] overflow-hidden border border-[var(--color-border)] bg-[var(--color-bg-muted)]"
+          className="aspect-video rounded-[var(--radius-lg)] overflow-hidden border border-[var(--color-border)] bg-[var(--color-bg-muted)] transition-transform duration-200 hover:scale-[1.02]"
         >
           <img
             src={src}

@@ -32,24 +32,24 @@ export function NotificationBell() {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="relative p-2 rounded-full hover:bg-[var(--color-surface-hover)] transition-colors"
+        className="relative p-2.5 rounded-full transition-colors hover:bg-[var(--color-surface-hover)]"
       >
         <Bell className="h-5 w-5 text-[var(--color-text-secondary)]" />
         {unread > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--color-danger)] text-[10px] font-bold text-white">
+          <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--color-danger)] text-[10px] font-bold text-white ring-2 ring-[var(--color-surface)]">
             {unread > 9 ? "9+" : unread}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg z-50">
+        <div className="fixed inset-x-4 top-16 z-50 origin-top-right animate-scale-in rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-lg)] sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-80">
           <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
             <span className="font-semibold text-sm text-[var(--color-text)]">Notifications</span>
             {unread > 0 && (
               <button
                 onClick={() => markAllRead.mutate()}
-                className="text-xs text-[var(--color-primary)] hover:underline"
+                className="text-xs font-medium text-[var(--color-primary)] hover:underline"
               >
                 Mark all read
               </button>
@@ -68,7 +68,7 @@ export function NotificationBell() {
 
           <a
             href="/customer/notifications"
-            className="block py-2 text-center text-xs text-[var(--color-primary)] hover:underline border-t border-[var(--color-border)]"
+            className="block py-2.5 text-center text-xs font-medium text-[var(--color-primary)] hover:underline border-t border-[var(--color-border)]"
           >
             View all
           </a>
@@ -82,8 +82,8 @@ function NotificationItem({ notification: n }: { notification: Notification }) {
   return (
     <div
       className={cn(
-        "flex gap-3 px-4 py-3 text-sm",
-        !n.isRead && "bg-[var(--color-primary)]/5",
+        "flex gap-3 px-4 py-3 text-sm transition-colors hover:bg-[var(--color-surface-hover)]",
+        !n.isRead && "bg-[var(--color-primary-soft)]",
       )}
     >
       {!n.isRead && (

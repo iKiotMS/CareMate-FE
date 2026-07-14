@@ -21,11 +21,12 @@ export function StarRating({ value, onChange, readonly, size = "md" }: StarRatin
           type="button"
           disabled={readonly}
           onClick={() => onChange?.(star)}
-          className={cn(!readonly && "cursor-pointer hover:scale-110 transition-transform")}
+          className={cn(!readonly && "cursor-pointer transition-transform duration-150 hover:scale-110 active:scale-95")}
         >
           <Star
             className={cn(
               sizeMap[size],
+              "transition-colors duration-150",
               star <= value ? "fill-[var(--color-warning)] text-[var(--color-warning)]" : "text-[var(--color-border-strong)]",
             )}
           />

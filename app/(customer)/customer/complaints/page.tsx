@@ -30,7 +30,7 @@ export default function ComplaintsPage() {
 
   if (isLoading) {
     return (
-      <div className="p-6 space-y-4">
+      <div className="space-y-4">
         <PageHeader title={t("customer.complaints.title")} />
         {Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}
       </div>
@@ -40,7 +40,7 @@ export default function ComplaintsPage() {
   if (isError) return <ErrorState onRetry={refetch} />;
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="space-y-4">
       <PageHeader
         title={t("customer.complaints.title")}
         action={
@@ -51,22 +51,24 @@ export default function ComplaintsPage() {
       />
 
       {complaints.length === 0 ? (
-        <EmptyState
-          title={t("customer.complaints.noComplaints")}
-          description={t("customer.complaints.noComplaintsDesc")}
-        />
+        <div className="rounded-[var(--radius-xl)] border border-dashed border-[var(--color-border)]">
+          <EmptyState
+            title={t("customer.complaints.noComplaints")}
+            description={t("customer.complaints.noComplaintsDesc")}
+          />
+        </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3 animate-fade-up">
           {complaints.map((c) => (
             <Link key={c._id} href={`/customer/complaints/${c._id}`}>
-              <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 hover:bg-[var(--color-surface-hover)] transition-colors">
+              <div className="rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-xs)] transition-all duration-150 hover:border-[var(--color-primary)]/30 hover:shadow-[var(--shadow-sm)] active:scale-[0.99]">
                 <div className="flex items-start justify-between gap-2">
                   <p className="font-medium text-[var(--color-text)]">{c.subject}</p>
                   <Badge variant={COMPLAINT_STATUS_VARIANT[c.status] as any}>
                     {COMPLAINT_STATUS_LABEL[c.status] ?? c.status}
                   </Badge>
                 </div>
-                <p className="mt-1 text-sm text-[var(--color-text-secondary)] line-clamp-2">
+                <p className="mt-1.5 text-sm text-[var(--color-text-secondary)] line-clamp-2">
                   {c.description}
                 </p>
                 <p className="mt-2 text-xs text-[var(--color-text-muted)]">

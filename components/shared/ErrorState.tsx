@@ -10,8 +10,10 @@ interface ErrorStateProps {
 
 export function ErrorState({ message, onRetry }: ErrorStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-center gap-4">
-      <AlertCircle className="h-12 w-12 text-[var(--color-danger)]" />
+    <div className="flex flex-col items-center justify-center gap-4 py-16 px-6 text-center animate-fade-in">
+      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--color-danger-soft)]">
+        <AlertCircle className="h-7 w-7 text-[var(--color-danger)]" />
+      </div>
       <p className="text-[var(--color-text)]">
         {message ?? "Something went wrong. Please try again."}
       </p>

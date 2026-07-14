@@ -35,7 +35,7 @@ export default function ComplaintDetailPage({ params }: { params: Promise<{ id: 
 
   if (isLoading) {
     return (
-      <div className="p-6 space-y-4 max-w-2xl">
+      <div className="space-y-4 max-w-2xl">
         <SkeletonCard />
         <SkeletonCard />
       </div>
@@ -48,7 +48,7 @@ export default function ComplaintDetailPage({ params }: { params: Promise<{ id: 
   const replies: any[] = c.replies ?? [];
 
   return (
-    <div className="p-6 space-y-5 max-w-2xl">
+    <div className="space-y-5 max-w-2xl animate-fade-up">
       <PageHeader
         title={t("customer.complaints.detailTitle")}
         action={
@@ -100,7 +100,7 @@ export default function ComplaintDetailPage({ params }: { params: Promise<{ id: 
                 <img
                   src={url}
                   alt={`evidence-${i + 1}`}
-                  className="w-20 h-20 object-cover rounded-lg border border-[var(--color-border)] hover:opacity-80 transition-opacity"
+                  className="w-20 h-20 object-cover rounded-[var(--radius-lg)] border border-[var(--color-border)] shadow-[var(--shadow-xs)] transition-transform duration-150 hover:scale-[1.03]"
                 />
               </a>
             ))}
@@ -118,7 +118,7 @@ export default function ComplaintDetailPage({ params }: { params: Promise<{ id: 
             {replies.map((reply: any, i: number) => (
               <div
                 key={i}
-                className="p-3 rounded-lg bg-[var(--color-bg-muted)] border border-[var(--color-border)]"
+                className="p-3.5 rounded-[var(--radius-lg)] bg-[var(--color-primary-soft)] border border-[var(--color-primary)]/15"
               >
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs font-medium text-[var(--color-primary)]">

@@ -4,8 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCreateComplaint, useCustomerOrders, useUploadPhotos } from "@/hooks/useApi";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Input, FormField } from "@/components/ui/Input";
+import { Input, Textarea, Select, FormField } from "@/components/ui/Input";
+import { Upload } from "lucide-react";
 import { t } from "@/lib/i18n";
 import { toast } from "sonner";
 import { getApiErrorMessage } from "@/lib/api-errors";
@@ -53,71 +55,76 @@ export default function NewComplaintPage() {
   const isPending = createComplaint.isPending || uploading;
 
   return (
-    <div className="p-6 max-w-lg">
+    <div className="max-w-lg">
       <PageHeader title={t("customer.complaints.newComplaint")} />
 
-      <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-        <FormField label={t("customer.complaints.relatedOrder")} required>
-          <select
-            className="h-10 w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-sm text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-            value={form.orderId}
-            onChange={(e) => setForm({ ...form, orderId: e.target.value })}
-            required
-          >
-            <option value="">{t("customer.complaints.selectOrder")}</option>
-            {orders.map((o) => (
-              <option key={o._id} value={o._id}>
-                #{o._id.slice(-6).toUpperCase()} — {o.scheduledDate ?? o.createdAt?.slice(0, 10)}
-              </option>
-            ))}
-          </select>
-        </FormField>
+      <Card padding="lg" className="animate-fade-up">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <FormField label={t("customer.complaints.relatedOrder")} required>
+            <Select
+              value={form.orderId}
+              onChange={(e) => setForm({ ...form, orderId: e.target.value })}
+              required
+            >
+              <option value="">{t("customer.complaints.selectOrder")}</option>
+              {orders.map((o) => (
+                <option key={o._id} value={o._id}>
+                  #{o._id.slice(-6).toUpperCase()} — {o.scheduledDate ?? o.createdAt?.slice(0, 10)}
+                </option>
+              ))}
+            </Select>
+          </FormField>
 
-        <FormField label={t("customer.complaints.subject")} required>
-          <Input
-            placeholder={t("customer.complaints.subjectPlaceholder")}
-            value={form.subject}
-            onChange={(e) => setForm({ ...form, subject: e.target.value })}
-            maxLength={100}
-            required
-          />
-        </FormField>
+          <FormField label={t("customer.complaints.subject")} required>
+            <Input
+              placeholder={t("customer.complaints.subjectPlaceholder")}
+              value={form.subject}
+              onChange={(e) => setForm({ ...form, subject: e.target.value })}
+              maxLength={100}
+              required
+            />
+          </FormField>
 
-        <FormField label={t("customer.complaints.description")} required>
-          <textarea
-            className="min-h-[120px] w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] resize-none"
-            placeholder={t("customer.complaints.descriptionPlaceholder")}
-            value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-            maxLength={2000}
-            required
-          />
-        </FormField>
+          <FormField label={t("customer.complaints.description")} required>
+            <Textarea
+              className="min-h-[120px]"
+              placeholder={t("customer.complaints.descriptionPlaceholder")}
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              maxLength={2000}
+              required
+            />
+          </FormField>
 
-        <FormField label={t("customer.complaints.evidence")}>
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
-            className="text-sm text-[var(--color-text-secondary)]"
-          />
-          {files.length > 0 && (
-            <p className="text-xs text-[var(--color-text-muted)] mt-1">
-              {t("customer.complaints.filesSelected", { count: files.length })}
-            </p>
-          )}
-        </FormField>
+          <FormField label={t("customer.complaints.evidence")}>
+            <label className="flex cursor-pointer items-center gap-2.5 rounded-[var(--radius-md)] border border-dashed border-[var(--color-border)] px-3.5 py-2.5 text-sm text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-soft)]">
+              <Upload className="h-4 w-4 shrink-0 text-[var(--color-text-muted)]" />
+              <span>{t("customer.complaints.evidence")}</span>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
+                className="hidden"
+              />
+            </label>
+            {files.length > 0 && (
+              <p className="text-xs font-medium text-[var(--color-success)] mt-1.5">
+                {t("customer.complaints.filesSelected", { count: files.length })}
+              </p>
+            )}
+          </FormField>
 
-        <div className="flex gap-3 pt-2">
-          <Button type="button" variant="outline" onClick={() => router.back()} disabled={isPending}>
-            {t("common.cancel")}
-          </Button>
-          <Button type="submit" loading={isPending}>
-            {t("customer.complaints.submit")}
-          </Button>
-        </div>
-      </form>
+          <div className="flex gap-3 pt-2">
+            <Button type="button" variant="outline" onClick={() => router.back()} disabled={isPending}>
+              {t("common.cancel")}
+            </Button>
+            <Button type="submit" loading={isPending} className="flex-1">
+              {t("customer.complaints.submit")}
+            </Button>
+          </div>
+        </form>
+      </Card>
     </div>
   );
 }

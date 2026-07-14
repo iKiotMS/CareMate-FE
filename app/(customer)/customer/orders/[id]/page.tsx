@@ -17,6 +17,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Textarea, FormField } from "@/components/ui/Input";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { t } from "@/lib/i18n";
 import {
   useCustomerOrderDetail,
@@ -31,7 +32,7 @@ import { formatOrderDate } from "@/lib/format";
 import { getApiErrorMessage } from "@/lib/api-errors";
 import { cn } from "@/lib/cn";
 import type { Order, OrderStatus } from "@/types";
-import { AlertCircle, Loader2, UserCheck } from "lucide-react";
+import { AlertCircle, ArrowLeft, Loader2, UserCheck } from "lucide-react";
 
 export default function CustomerOrderDetailPage({
   params,
@@ -70,17 +71,35 @@ export default function CustomerOrderDetailPage({
   const [error, setError] = useState("");
   const [selectedCleanerIds, setSelectedCleanerIds] = useState<string[]>([]);
 
-  if (isLoading) {
+  // The data query is gated on `hasToken()`, which reads a browser cookie and is
+  // therefore always false during SSR but true on the client's first render — that
+  // divergence made the server emit the "not found" markup while the client emitted
+  // the skeleton, causing a hydration mismatch. Render the skeleton until mounted so
+  // the first client render matches the server output.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted || isLoading) {
     return (
-      <div className="flex items-center gap-2 py-12">
-        <Loader2 className="w-5 h-5 animate-spin" /> {t("common.loading")}
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-64" />
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2 space-y-6">
+            <Skeleton className="h-56 w-full rounded-[var(--radius-xl)]" />
+            <Skeleton className="h-40 w-full rounded-[var(--radius-xl)]" />
+          </div>
+          <div className="space-y-4">
+            <Skeleton className="h-40 w-full rounded-[var(--radius-xl)]" />
+            <Skeleton className="h-24 w-full rounded-[var(--radius-xl)]" />
+          </div>
+        </div>
       </div>
     );
   }
 
   if (!order) {
     return (
-      <div className="text-center py-12 text-[var(--color-text-muted)]">
+      <div className="text-center py-16 text-[var(--color-text-muted)]">
         Không tìm thấy đơn hàng
       </div>
     );
@@ -210,13 +229,16 @@ export default function CustomerOrderDetailPage({
     <div>
       <Link
         href="/customer/orders"
-        className="text-sm text-[var(--color-primary)] hover:underline mb-4 inline-block"
+        className="group mb-4 inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] py-2 pl-2.5 pr-4 text-sm font-medium text-[var(--color-text-secondary)] shadow-[var(--shadow-xs)] transition-all duration-150 hover:border-[var(--color-primary)]/50 hover:text-[var(--color-primary)] hover:shadow-[var(--shadow-sm)] active:scale-[0.98]"
       >
-        ← {t("common.back")}
+        <span className="grid h-6 w-6 place-items-center rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)] transition-transform duration-150 group-hover:-translate-x-0.5">
+          <ArrowLeft className="h-4 w-4" />
+        </span>
+        {t("common.back")}
       </Link>
 
       {error && (
-        <div className="mb-4 p-3 rounded-lg bg-red-50 text-red-700 text-sm">
+        <div className="mb-4 animate-fade-in rounded-[var(--radius-lg)] bg-[var(--color-danger-soft)] p-3.5 text-sm font-medium text-[var(--color-danger)]">
           {error}
         </div>
       )}
@@ -231,7 +253,7 @@ export default function CustomerOrderDetailPage({
         <div className="lg:col-span-2 space-y-6">
           {/* Timeline */}
           <Card>
-            <h2 className="font-semibold mb-4">
+            <h2 className="font-semibold text-[var(--color-text)] mb-4">
               {t("customer.orderDetail.timeline")}
             </h2>
             <Timeline items={timeline} />
@@ -240,7 +262,7 @@ export default function CustomerOrderDetailPage({
           {/* Applicants section — visible when PENDING and cleaners have applied */}
           {order.status === "PENDING" && pendingApplicants.length > 0 && (
             <Card>
-              <h2 className="font-semibold mb-1">
+              <h2 className="font-semibold text-[var(--color-text)] mb-1">
                 Nhân viên ứng tuyển ({pendingApplicants.length})
               </h2>
               <p className="text-sm text-[var(--color-text-muted)] mb-4">
@@ -256,13 +278,13 @@ export default function CustomerOrderDetailPage({
                       type="button"
                       onClick={() => toggleCleaner(applicant.cleanerId)}
                       className={cn(
-                        "w-full text-left flex items-center gap-3 p-3 rounded-lg border-2 transition-all",
+                        "w-full text-left flex items-center gap-3 p-3.5 rounded-[var(--radius-lg)] border-2 transition-all duration-150 active:scale-[0.99]",
                         picked
-                          ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)]"
-                          : "border-[var(--color-border)] hover:border-[var(--color-primary)]/50",
+                          ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)] shadow-[var(--shadow-xs)]"
+                          : "border-[var(--color-border)] hover:border-[var(--color-primary)]/50 hover:bg-[var(--color-surface-hover)]",
                       )}
                     >
-                      <div className="w-10 h-10 rounded-full bg-[var(--color-primary-soft)] flex items-center justify-center text-[var(--color-primary)] font-medium text-sm shrink-0">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--color-gradient-from)] to-[var(--color-gradient-to)] flex items-center justify-center text-white font-semibold text-sm shrink-0">
                         {(applicant.cleanerName ?? "?").charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -277,7 +299,9 @@ export default function CustomerOrderDetailPage({
                         </p>
                       </div>
                       {picked && (
-                        <UserCheck className="w-5 h-5 text-[var(--color-primary)] shrink-0" />
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)] text-white">
+                          <UserCheck className="w-3.5 h-3.5" />
+                        </span>
                       )}
                     </button>
                   );
@@ -285,6 +309,7 @@ export default function CustomerOrderDetailPage({
               </div>
               <Button
                 className="w-full mt-4"
+                size="lg"
                 disabled={selecting || selectedCleanerIds.length === 0}
                 onClick={handleConfirmSelection}
               >
@@ -298,7 +323,8 @@ export default function CustomerOrderDetailPage({
           )}
 
           {order.status === "PENDING" && pendingApplicants.length === 0 && (
-            <div className="rounded-xl border border-[var(--color-border)] p-4 text-sm text-[var(--color-text-muted)] text-center">
+            <div className="flex items-center gap-3 rounded-[var(--radius-xl)] border border-dashed border-[var(--color-border)] p-5 text-sm text-[var(--color-text-muted)]">
+              <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[var(--color-primary)]" />
               Đang chờ nhân viên ứng tuyển... Bạn sẽ nhận được thông báo khi có
               ứng viên.
             </div>
@@ -306,20 +332,22 @@ export default function CustomerOrderDetailPage({
 
           {/* Deposit QR — ON_HOLD_PAYMENT */}
           {order.status === "ON_HOLD_PAYMENT" && depositInfo && (
-            <Card className="border-amber-300 bg-amber-50 dark:bg-amber-950/20">
-              <div className="flex items-center gap-2 mb-3">
-                <AlertCircle className="w-5 h-5 text-amber-600" />
-                <h2 className="font-semibold">Đặt cọc để xác nhận đơn</h2>
+            <Card className="border-[var(--color-warning)]/25 bg-[var(--color-warning-soft)]">
+              <div className="flex flex-col gap-3 mb-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 text-[var(--color-warning)]" />
+                  <h2 className="font-semibold text-[var(--color-text)]">Đặt cọc để xác nhận đơn</h2>
+                </div>
+                <CountdownTimer expiresAt={(depositInfo as any).expiresAt} />
               </div>
-              <CountdownTimer expiresAt={(depositInfo as any).expiresAt} />
               <div className="mt-4 text-center">
                 <img
                   src={(depositInfo as any).qrDataUrl}
                   alt="QR đặt cọc"
-                  className="mx-auto w-full max-w-[208px] aspect-square rounded-xl border"
+                  className="mx-auto w-full max-w-[208px] aspect-square rounded-[var(--radius-xl)] border border-[var(--color-border)] shadow-[var(--shadow-sm)]"
                 />
               </div>
-              <div className="mt-4 space-y-2 text-sm bg-white dark:bg-gray-900 rounded-lg p-4">
+              <div className="mt-4 space-y-2 text-sm bg-[var(--color-surface)] rounded-[var(--radius-lg)] p-4 border border-[var(--color-border)]">
                 <div className="flex justify-between">
                   <span className="text-[var(--color-text-muted)]">
                     Số tiền đặt cọc
@@ -365,9 +393,9 @@ export default function CustomerOrderDetailPage({
 
           {/* Final payment QR — PAYMENT_PENDING */}
           {order.status === "PAYMENT_PENDING" && finalPaymentInfo && (
-            <Card className="border-blue-300 bg-blue-50 dark:bg-blue-950/20">
-              <h2 className="font-semibold mb-3">Thanh toán phần còn lại</h2>
-              <div className="mb-4 space-y-1 text-sm">
+            <Card className="border-[var(--color-info)]/25 bg-[var(--color-info-soft)]">
+              <h2 className="font-semibold text-[var(--color-text)] mb-3">Thanh toán phần còn lại</h2>
+              <div className="mb-4 space-y-1.5 text-sm">
                 <div className="flex justify-between">
                   <span className="text-[var(--color-text-muted)]">
                     Tổng dịch vụ
@@ -376,14 +404,14 @@ export default function CustomerOrderDetailPage({
                     {Number((finalPaymentInfo as any).originalTotal)} ₫
                   </span>
                 </div>
-                <div className="flex justify-between text-green-700">
+                <div className="flex justify-between text-[var(--color-success)]">
                   <span>Đã đặt cọc</span>
                   <span>
                     − {Number((finalPaymentInfo as any).depositPaid)} ₫
                   </span>
                 </div>
-                <div className="flex justify-between font-bold text-base border-t pt-2">
-                  <span>Còn lại</span>
+                <div className="flex justify-between font-bold text-base border-t border-[var(--color-info)]/20 pt-2.5">
+                  <span className="text-[var(--color-text)]">Còn lại</span>
                   <span className="text-[var(--color-primary)]">
                     {Number((finalPaymentInfo as any).amount)} ₫
                   </span>
@@ -393,10 +421,10 @@ export default function CustomerOrderDetailPage({
                 <img
                   src={(finalPaymentInfo as any).qrDataUrl}
                   alt="QR thanh toán cuối"
-                  className="mx-auto w-full max-w-[208px] aspect-square rounded-xl border"
+                  className="mx-auto w-full max-w-[208px] aspect-square rounded-[var(--radius-xl)] border border-[var(--color-border)] shadow-[var(--shadow-sm)]"
                 />
               </div>
-              <div className="mt-4 space-y-2 text-sm bg-white dark:bg-gray-900 rounded-lg p-4">
+              <div className="mt-4 space-y-2 text-sm bg-[var(--color-surface)] rounded-[var(--radius-lg)] p-4 border border-[var(--color-border)]">
                 <div className="flex justify-between">
                   <span className="text-[var(--color-text-muted)]">
                     Ngân hàng
@@ -450,16 +478,16 @@ export default function CustomerOrderDetailPage({
 
           {/* Tasks */}
           <Card>
-            <h2 className="font-semibold mb-4">
+            <h2 className="font-semibold text-[var(--color-text)] mb-4">
               {t("customer.orderDetail.tasks")}
             </h2>
-            <ul className="space-y-2">
+            <ul className="space-y-2.5">
               {order.tasks?.map((task, i) => (
-                <li key={i} className="flex items-center gap-2 text-sm">
-                  <span className="w-5 h-5 rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center text-xs">
+                <li key={i} className="flex items-center gap-2.5 text-sm">
+                  <span className="w-5 h-5 shrink-0 rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)] flex items-center justify-center text-xs font-semibold">
                     {i + 1}
                   </span>
-                  {task.taskName}
+                  <span className="text-[var(--color-text)]">{task.taskName}</span>
                   {task.isDone && <Badge variant="success">✓</Badge>}
                 </li>
               ))}
@@ -468,7 +496,7 @@ export default function CustomerOrderDetailPage({
 
           {(order.photosBeforeBooking?.length ?? 0) > 0 && (
             <Card>
-              <h2 className="font-semibold mb-3">
+              <h2 className="font-semibold text-[var(--color-text)] mb-3">
                 {t("customer.orderDetail.photosBefore")}
               </h2>
               <PhotoGrid photos={order.photosBeforeBooking} />
@@ -478,52 +506,60 @@ export default function CustomerOrderDetailPage({
 
         {/* Sidebar */}
         <div className="space-y-4">
-          <Card>
-            <p className="text-sm text-[var(--color-text-muted)]">
-              {t("customer.orders.date")}
-            </p>
-            <p className="font-medium">
-              {formatOrderDate(order.scheduledDate)} · {order.scheduledTime}
-            </p>
-            <p className="text-sm text-[var(--color-text-muted)] mt-3">
-              Thời lượng
-            </p>
-            <p className="font-medium">
-              {order.durationHours ?? "—"} giờ · {order.numCleaners ?? 1} nhân viên
-            </p>
-            <p className="text-sm text-[var(--color-text-muted)] mt-3">
-              {t("customer.orders.cleaner")}
-            </p>
-            <p className="font-medium">
-              {order.cleanerNames && order.cleanerNames.length > 0
-                ? order.cleanerNames.join(", ")
-                : order.cleanerName
-                  ? order.cleanerName
-                  : order.status === "PENDING"
-                    ? t("customer.orders.notAssigned")
-                    : order.status === "ON_HOLD_PAYMENT"
-                      ? "Đang chờ xác nhận thanh toán"
-                      : t("customer.orders.notAssigned")}
-            </p>
-            {order.status === "PENDING" && (
-              <p className="text-xs text-amber-600 mt-2">
-                {pendingApplicants.length > 0
-                  ? `${pendingApplicants.length} nhân viên đã ứng tuyển — hãy chọn 1 người`
-                  : "Đang chờ nhân viên ứng tuyển..."}
+          <Card className="space-y-3.5">
+            <div>
+              <p className="text-sm text-[var(--color-text-muted)]">
+                {t("customer.orders.date")}
               </p>
-            )}
+              <p className="font-medium text-[var(--color-text)]">
+                {formatOrderDate(order.scheduledDate)} · {order.scheduledTime}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-[var(--color-text-muted)]">
+                Thời lượng
+              </p>
+              <p className="font-medium text-[var(--color-text)]">
+                {order.durationHours ?? "—"} giờ · {order.numCleaners ?? 1} nhân viên
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-[var(--color-text-muted)]">
+                {t("customer.orders.cleaner")}
+              </p>
+              <p className="font-medium text-[var(--color-text)]">
+                {order.cleanerNames && order.cleanerNames.length > 0
+                  ? order.cleanerNames.join(", ")
+                  : order.cleanerName
+                    ? order.cleanerName
+                    : order.status === "PENDING"
+                      ? t("customer.orders.notAssigned")
+                      : order.status === "ON_HOLD_PAYMENT"
+                        ? "Đang chờ xác nhận thanh toán"
+                        : t("customer.orders.notAssigned")}
+              </p>
+              {order.status === "PENDING" && (
+                <p className="text-xs font-medium text-[var(--color-warning)] mt-1.5">
+                  {pendingApplicants.length > 0
+                    ? `${pendingApplicants.length} nhân viên đã ứng tuyển — hãy chọn 1 người`
+                    : "Đang chờ nhân viên ứng tuyển..."}
+                </p>
+              )}
+            </div>
             {order.note && (
-              <p className="text-sm mt-3 text-[var(--color-text-secondary)]">
-                {order.note}
-              </p>
+              <div className="border-t border-[var(--color-border)] pt-3.5">
+                <p className="text-sm text-[var(--color-text-secondary)]">
+                  {order.note}
+                </p>
+              </div>
             )}
           </Card>
 
           {/* Total */}
           <Card>
             <p className="text-sm text-[var(--color-text-muted)]">Tổng tiền</p>
-            <p className="text-xl font-bold text-[var(--color-primary)]">
-              {order.totalAmount} ₫
+            <p className="text-2xl font-bold tracking-tight text-[var(--color-primary)] mt-1">
+              {Number(order.totalAmount).toLocaleString("vi-VN")} ₫
             </p>
             {[
               "ON_HOLD_PAYMENT",
@@ -533,13 +569,24 @@ export default function CustomerOrderDetailPage({
               "REVIEW_PENDING",
               "PAYMENT_PENDING",
             ].includes(order.status) && (
-              <div className="mt-2 space-y-1 text-xs text-[var(--color-text-muted)]">
+              <div className="mt-3 space-y-2 text-xs text-[var(--color-text-muted)]">
+                <div className="h-1.5 rounded-full bg-[var(--color-bg-muted)] overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-[var(--color-secondary)] transition-all duration-500"
+                    style={{
+                      width:
+                        order.status === "COMPLETED"
+                          ? "100%"
+                          : order.status !== "ON_HOLD_PAYMENT"
+                            ? `${Math.min(100, (30000 / Math.max(order.totalAmount, 1)) * 100)}%`
+                            : "0%",
+                    }}
+                  />
+                </div>
                 <div className="flex justify-between">
                   <span>Đặt cọc</span>
                   <span
-                    className={
-                      order.status !== "ON_HOLD_PAYMENT" ? "text-green-600" : ""
-                    }
+                    className={cn("font-medium", order.status !== "ON_HOLD_PAYMENT" && "text-[var(--color-success)]")}
                   >
                     30.000 ₫{" "}
                     {order.status !== "ON_HOLD_PAYMENT" ? "✓" : "(chờ)"}
@@ -548,9 +595,7 @@ export default function CustomerOrderDetailPage({
                 <div className="flex justify-between">
                   <span>Còn lại</span>
                   <span
-                    className={
-                      order.status === "COMPLETED" ? "text-green-600" : ""
-                    }
+                    className={cn("font-medium", order.status === "COMPLETED" && "text-[var(--color-success)]")}
                   >
                     {Math.max(0, order.totalAmount - 30000).toLocaleString("vi-VN")} ₫{" "}
                     {order.status === "COMPLETED" ? "✓" : ""}
@@ -578,11 +623,11 @@ export default function CustomerOrderDetailPage({
           {order.status === "REVIEW_PENDING" &&
             !order.rating &&
             !showReview && (
-              <div className="rounded-xl border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/5 p-4">
-                <h3 className="font-semibold text-[var(--color-text)] mb-3">
+              <div className="rounded-[var(--radius-xl)] border border-[var(--color-primary)]/20 bg-[var(--color-primary-soft)] p-5 animate-fade-up">
+                <h3 className="font-semibold text-[var(--color-text)] mb-2">
                   Đánh giá dịch vụ
                 </h3>
-                <p className="text-sm text-[var(--color-text-muted)] mb-3">
+                <p className="text-sm text-[var(--color-text-secondary)] mb-4">
                   Đánh giá để tiến hành thanh toán phần còn lại.
                 </p>
                 <Button className="w-full" onClick={() => setShowReview(true)}>
@@ -592,7 +637,7 @@ export default function CustomerOrderDetailPage({
             )}
 
           {showReview && (
-            <Card>
+            <Card className="animate-fade-up">
               <form onSubmit={handleReview}>
                 <FormField label={t("customer.reviews.rating")}>
                   <StarRating value={rating} onChange={setRating} />
@@ -618,10 +663,10 @@ export default function CustomerOrderDetailPage({
 
           {order.rating != null && (
             <Card>
-              <p className="text-sm font-medium mb-2">Đánh giá của bạn</p>
+              <p className="text-sm font-medium text-[var(--color-text)] mb-2">Đánh giá của bạn</p>
               <StarRating value={order.rating} readonly />
               {order.review && (
-                <p className="text-sm text-[var(--color-text-secondary)] mt-2">
+                <p className="text-sm text-[var(--color-text-secondary)] mt-2.5">
                   {order.review}
                 </p>
               )}

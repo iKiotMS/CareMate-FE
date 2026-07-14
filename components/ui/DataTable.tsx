@@ -9,12 +9,12 @@ interface DataTableProps {
 
 export function DataTable({ headers, children, className }: DataTableProps) {
   return (
-    <div className={cn("overflow-x-auto rounded-[var(--radius-lg)] border border-[var(--color-border)]", className)}>
+    <div className={cn("overflow-x-auto rounded-[var(--radius-xl)] border border-[var(--color-border)] shadow-[var(--shadow-xs)]", className)}>
       <table className="w-full text-sm">
         <thead>
           <tr className="bg-[var(--color-bg-muted)] border-b border-[var(--color-border)]">
             {headers.map((h) => (
-              <th key={h} className="text-left px-4 py-3 font-semibold text-[var(--color-text-secondary)] whitespace-nowrap">
+              <th key={h} className="text-left px-4 py-3.5 font-semibold text-[var(--color-text-secondary)] whitespace-nowrap">
                 {h}
               </th>
             ))}
@@ -29,7 +29,7 @@ export function DataTable({ headers, children, className }: DataTableProps) {
 }
 
 export function TableRow({ children, className }: { children: ReactNode; className?: string }) {
-  return <tr className={cn("hover:bg-[var(--color-surface-hover)] transition-colors", className)}>{children}</tr>;
+  return <tr className={cn("transition-colors hover:bg-[var(--color-surface-hover)]", className)}>{children}</tr>;
 }
 
 export function TableCell({ children, className }: { children: ReactNode; className?: string }) {
