@@ -1,3 +1,4 @@
+"use client";
 import { PublicHeader } from "@/components/layout/PublicHeader";
 import { PublicFooter } from "@/components/layout/PublicFooter";
 import { HeroCarousel } from "@/components/landing/HeroCarousel";
