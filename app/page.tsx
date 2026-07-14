@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { PublicHeader } from "@/components/layout/PublicHeader";
+import { usePageView } from "@/hooks/usePageView";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { vi } from "@/locales/vi";
@@ -38,6 +39,8 @@ const iconMap: Record<string, LucideIcon> = {
 const getIcon = (iconKey: string): LucideIcon => iconMap[iconKey] || Home;
 
 export default function LandingPage() {
+  usePageView("landing");
+
   return (
     <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
       <PublicHeader />

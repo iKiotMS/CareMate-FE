@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatCard } from "@/components/shared/StatCard";
+import { usePageView } from "@/hooks/usePageView";
 import { OrderStatusBadge } from "@/components/shared/OrderStatusBadge";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -22,6 +23,8 @@ import {
 } from "lucide-react";
 
 export default function CustomerDashboardPage() {
+  usePageView("home");
+
   const { data: ordersRaw, isLoading } = useCustomerOrders();
   const list = (Array.isArray(ordersRaw) ? ordersRaw : []) as Order[];
 

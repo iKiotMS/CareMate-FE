@@ -18,6 +18,7 @@ import {
   ListChecks,
   MessageSquare,
   BarChart3,
+  TrendingUp,
   Brain,
   Settings,
   LogOut,
@@ -48,6 +49,7 @@ const iconMap: Record<string, LucideIcon> = {
   ListChecks,
   MessageSquare,
   BarChart3,
+  TrendingUp,
   Brain,
   Settings,
 };

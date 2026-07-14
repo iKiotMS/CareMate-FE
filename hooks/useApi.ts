@@ -6,6 +6,9 @@ import type {
   Notification,
   Complaint,
   IncomeSummary,
+  FinancialBreakdown,
+  TrafficStats,
+  CleanerSalary,
 } from "@/types";
 
 const hasToken = () =>
@@ -140,6 +143,12 @@ export interface CreateOrderPayload {
   areaM2: number;
   photosBeforeBooking?: string[];
   paymentMethod: "CASH" | "BANK_TRANSFER" | "E_WALLET";
+  /**
+   * Must be `true` — the backend rejects the order otherwise. The customer is
+   * agreeing to reimburse on-site costs (parking, building access) that the
+   * cleaner fronts; without it an EXPENSE claim has no basis.
+   */
+  expenseConsent: boolean;
 }
 
 export const useCreateOrder = () => {
@@ -419,14 +428,111 @@ export const useCleanerWorkHistory = () => {
 
 // ——— Admin ———
 
-export const useAdminDashboardStats = () => {
+export const useAdminDashboardStats = (range?: {
+  from?: string;
+  to?: string;
+}) => {
   return useQuery({
-    queryKey: ["admin", "dashboard"],
+    queryKey: ["admin", "dashboard", range?.from, range?.to],
     queryFn: async () => {
-      const response = await apiClient.get("/admin/dashboard/stats");
+      const response = await apiClient.get("/admin/dashboard/stats", {
+        params: { from: range?.from, to: range?.to },
+      });
       return response.data;
     },
     enabled: hasToken(),
+  });
+};
+
+/** Gross billed / service revenue / reimbursements / commission for a window. */
+export const useFinancialSummary = (range?: {
+  from?: string;
+  to?: string;
+}) => {
+  return useQuery({
+    queryKey: ["admin", "revenue", "summary", range?.from, range?.to],
+    queryFn: async () => {
+      const response = await apiClient.get("/admin/revenue/summary", {
+        params: { from: range?.from, to: range?.to },
+      });
+      return response.data as FinancialBreakdown;
+    },
+    enabled: hasToken(),
+  });
+};
+
+/** Landing-page + home-screen traffic, unique visitors, and login activity. */
+export const useTrafficStats = (range?: { from?: string; to?: string }) => {
+  return useQuery({
+    queryKey: ["admin", "traffic", range?.from, range?.to],
+    queryFn: async () => {
+      const response = await apiClient.get("/admin/analytics/traffic", {
+        params: { from: range?.from, to: range?.to },
+      });
+      return response.data as TrafficStats;
+    },
+    enabled: hasToken(),
+  });
+};
+
+/** Payroll table: what each cleaner is owed for the window. Admin only. */
+export const useSalaryStats = (range?: { from?: string; to?: string }) => {
+  return useQuery({
+    queryKey: ["admin", "salary", range?.from, range?.to],
+    queryFn: async () => {
+      const response = await apiClient.get("/admin/income/salary-stats", {
+        params: { from: range?.from, to: range?.to },
+      });
+      return response.data as CleanerSalary[];
+    },
+    enabled: hasToken(),
+  });
+};
+
+// ——— Adjustments (overtime + out-of-pocket expenses) ———
+
+/** Cleaner claims an expense they paid out of pocket. Requires a receipt photo. */
+export const useRequestExpense = (orderId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      label: string;
+      amount: number;
+      evidencePhoto: string;
+    }) => {
+      const response = await apiClient.post(
+        `/orders/${orderId}/expenses`,
+        payload,
+      );
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+    },
+  });
+};
+
+/** Customer approves or rejects a pending adjustment. Only approval moves money. */
+export const useResolveAdjustment = (orderId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      adjustmentId: string;
+      approve: boolean;
+      rejectionReason?: string;
+    }) => {
+      const { adjustmentId, ...body } = payload;
+      const response = await apiClient.patch(
+        `/orders/${orderId}/adjustments/${adjustmentId}`,
+        body,
+      );
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["order", orderId] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+    },
   });
 };
 

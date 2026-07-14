@@ -15,6 +15,7 @@ import {
   AREA_OPTIONS,
   DURATION_OPTIONS,
   CLEANER_COUNT_OPTIONS,
+  EXPENSE_CONSENT_TEXT,
 } from "@/lib/constants";
 import {
   useCreateOrder,
@@ -42,6 +43,7 @@ export default function BookCleaningPage() {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState(1);
+  const [expenseConsent, setExpenseConsent] = useState(false);
   const [error, setError] = useState("");
   const [today, setToday] = useState("");
   const [maxDate, setMaxDate] = useState("");
@@ -239,6 +241,7 @@ export default function BookCleaningPage() {
         areaM2: areaM2Num,
         photosBeforeBooking: urls.length > 0 ? urls : undefined,
         paymentMethod: "BANK_TRANSFER",
+        expenseConsent,
       });
       const orderId = (result as any)?.data?._id ?? (result as any)?._id;
       toast.success(orderId ? `Đặt lịch thành công! Mã đơn #${String(orderId).slice(-6).toUpperCase()}` : "Đặt lịch thành công!");
@@ -742,9 +745,26 @@ export default function BookCleaningPage() {
               Sau khi đặt đơn, bạn sẽ chọn nhân viên và thanh toán đặt cọc{" "}
               <strong>{DEPOSIT_AMOUNT.toLocaleString("vi-VN")} ₫</strong> qua QR chuyển khoản.
             </div>
+            {/* On-site expense consent. Also enforced by the backend — this is the
+                record that makes a parking-fee claim collectable later. */}
+            <label className="mt-4 flex items-start gap-2.5 cursor-pointer rounded-[var(--radius-md)] border border-[var(--color-border)] p-3 hover:bg-[var(--color-surface-hover)]">
+              <input
+                type="checkbox"
+                checked={expenseConsent}
+                onChange={(e) => setExpenseConsent(e.target.checked)}
+                className="mt-0.5 w-4 h-4 shrink-0 accent-[var(--color-primary)]"
+              />
+              <span className="text-sm">
+                {EXPENSE_CONSENT_TEXT}
+                <span className="block text-xs text-[var(--color-text-muted)] mt-0.5">
+                  {t("adjustment.consentHint")}
+                </span>
+              </span>
+            </label>
+
             <Button
               onClick={submitOrder}
-              disabled={busy}
+              disabled={busy || !expenseConsent}
               className="w-full mt-4"
             >
               {busy ? (

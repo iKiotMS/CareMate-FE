@@ -39,6 +39,8 @@ export const adminNav: NavItem[] = [
   { href: "/admin/reviews", labelKey: "nav.admin.reviews", icon: "Star" },
   { href: "/admin/complaints", labelKey: "nav.admin.complaints", icon: "MessageSquare" },
   { href: "/admin/analytics", labelKey: "nav.admin.analytics", icon: "BarChart3" },
+  { href: "/admin/payroll", labelKey: "nav.admin.payroll", icon: "Wallet" },
+  { href: "/admin/traffic", labelKey: "nav.admin.traffic", icon: "TrendingUp" },
   { href: "/admin/ai-center", labelKey: "nav.admin.aiCenter", icon: "Brain" },
   { href: "/admin/settings", labelKey: "nav.admin.settings", icon: "Settings" },
 ];
